@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617" />
+      <stop offset="50%" stop-color="#0b1329" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Accent Glows -->
+    <radialGradient id="glow-blue" cx="20%" cy="25%" r="45%">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#020617" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glow-emerald" cx="80%" cy="70%" r="40%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#020617" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Card Gradients -->
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.9" />
+    </linearGradient>
+    <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#60a5fa" />
+      <stop offset="50%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="630" fill="url(#bg-grad)" />
+  <rect width="1200" height="630" fill="url(#glow-blue)" />
+  <rect width="1200" height="630" fill="url(#glow-emerald)" />
+
+  <!-- Grid Pattern Overlay -->
+  <g opacity="0.07" stroke="#94a3b8" stroke-width="1">
+    <line x1="0" y1="105" x2="1200" y2="105" />
+    <line x1="0" y1="210" x2="1200" y2="210" />
+    <line x1="0" y1="315" x2="1200" y2="315" />
+    <line x1="0" y1="420" x2="1200" y2="420" />
+    <line x1="0" y1="525" x2="1200" y2="525" />
+    <line x1="200" y1="0" x2="200" y2="630" />
+    <line x1="400" y1="0" x2="400" y2="630" />
+    <line x1="600" y1="0" x2="600" y2="630" />
+    <line x1="800" y1="0" x2="800" y2="630" />
+    <line x1="1000" y1="0" x2="1000" y2="630" />
+  </g>
+
+  <!-- Top Brand / Badge -->
+  <g transform="translate(80, 75)">
+    <!-- Brand Icon -->
+    <rect width="52" height="52" rx="14" fill="#2563eb" />
+    <text x="26" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="22" fill="#ffffff" text-anchor="middle">FCS</text>
+    
+    <!-- OS Tag -->
+    <rect x="70" y="8" width="310" height="34" rx="17" fill="#1e293b" stroke="#3b82f6" stroke-opacity="0.4" />
+    <circle cx="86" cy="25" r="5" fill="#10b981" />
+    <text x="100" y="30" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12" fill="#93c5fd" letter-spacing="1">AI WORKFORCE OS • SPRINT 01.5</text>
+  </g>
+
+  <!-- Main Headline -->
+  <g transform="translate(80, 195)">
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="44" fill="#ffffff" letter-spacing="-0.5">
+      KHI QUY MÔ LAO ĐỘNG TĂNG LÊN,
+    </text>
+    <text y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="44" fill="url(#brand-grad)" letter-spacing="-0.5">
+      SỰ KIỂM SOÁT KHÔNG ĐƯỢC PHÉP BIẾN MẤT.
+    </text>
+  </g>
+
+  <!-- Description Subheading -->
+  <g transform="translate(80, 315)">
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="400" font-size="20" fill="#cbd5e1" width="620">
+      <tspan x="0" dy="0">Kiểm soát toàn diện hành trình từ ứng tuyển đến chấm công</tspan>
+      <tspan x="0" dy="32">chuẩn Verified Working Worker (VWW) • Vận hành 1 Quản lý</tspan>
+    </text>
+  </g>
+
+  <!-- Feature Metric Pills -->
+  <g transform="translate(80, 420)">
+    <!-- Pill 1 -->
+    <rect width="180" height="70" rx="16" fill="url(#card-grad)" stroke="#334155" />
+    <text x="24" y="35" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="22" fill="#ffffff">&lt; 30s</text>
+    <text x="24" y="54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="500" font-size="12" fill="#94a3b8">Chuẩn hóa Pipeline</text>
+
+    <!-- Pill 2 -->
+    <rect x="200" width="180" height="70" rx="16" fill="url(#card-grad)" stroke="#334155" />
+    <text x="224" y="35" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="22" fill="#34d399">0 Trùng</text>
+    <text x="224" y="54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="500" font-size="12" fill="#94a3b8">Đối soát CCCD tức thì</text>
+
+    <!-- Pill 3 -->
+    <rect x="400" width="190" height="70" rx="16" fill="url(#card-grad)" stroke="#334155" />
+    <text x="424" y="35" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="22" fill="#60a5fa">1 Quản lý</text>
+    <text x="424" y="54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="500" font-size="12" fill="#94a3b8">300-500 Lao động</text>
+  </g>
+
+  <!-- Right Visual Card (Mockup / Preview representation) -->
+  <g transform="translate(730, 90)">
+    <!-- Outer Dashboard Box -->
+    <rect width="390" height="450" rx="24" fill="#0f172a" stroke="#1e293b" stroke-width="2" />
+    
+    <!-- Window Bar -->
+    <rect width="390" height="42" rx="24" fill="#1e293b" />
+    <rect y="20" width="390" height="22" fill="#1e293b" />
+    <circle cx="28" cy="21" r="5" fill="#ef4444" />
+    <circle cx="44" cy="21" r="5" fill="#f59e0b" />
+    <circle cx="60" cy="21" r="5" fill="#10b981" />
+    <text x="82" y="25" font-family="monospace" font-size="11" fill="#64748b">fcs-ai-workforce.vn</text>
+
+    <!-- Status Card 1: VWW Certified -->
+    <g transform="translate(24, 66)">
+      <rect width="342" height="96" rx="14" fill="#020617" stroke="#065f46" stroke-width="1.5" />
+      <circle cx="24" cy="28" r="10" fill="#064e3b" />
+      <text x="24" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" fill="#34d399" text-anchor="middle">✓</text>
+      <text x="44" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="13" fill="#34d399">CHỈ SỐ BẮC ĐẨU • VWW CERTIFIED</text>
+      <text x="24" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="18" fill="#ffffff">100% Khớp công thực tế</text>
+      <text x="24" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="400" font-size="11" fill="#94a3b8">Hồ sơ chuẩn + Đến nhà máy + Quét thẻ công</text>
+    </g>
+
+    <!-- Status Card 2: AI Exception Detector -->
+    <g transform="translate(24, 180)">
+      <rect width="342" height="110" rx="14" fill="#020617" stroke="#1e3a8a" stroke-width="1.5" />
+      <circle cx="24" cy="26" r="10" fill="#1e3a8a" />
+      <text x="24" y="30" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" fill="#60a5fa" text-anchor="middle">⚡</text>
+      <text x="44" y="30" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="12" fill="#60a5fa">AI EXCEPTION MONITOR</text>
+      <text x="24" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="12" fill="#e2e8f0">• 12 ca cần nhắc xe đón sớm</text>
+      <text x="24" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="12" fill="#e2e8f0">• 0 hồ sơ tranh chấp CCCD</text>
+      <text x="24" y="98" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="12" fill="#34d399">• 42/42 ca đêm Luxshare đã xác nhận</text>
+    </g>
+
+    <!-- Golden Flow 8 Stages bar -->
+    <g transform="translate(24, 310)">
+      <rect width="342" height="116" rx="14" fill="#020617" stroke="#334155" />
+      <text x="20" y="30" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12" fill="#cbd5e1">GOLDEN FLOW 8 CHẶNG TIẾP NHẬN</text>
+      <!-- Mini circles -->
+      <g transform="translate(20, 52)">
+        <rect width="34" height="24" rx="6" fill="#2563eb" />
+        <text x="17" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">01</text>
+        
+        <rect x="42" width="34" height="24" rx="6" fill="#2563eb" />
+        <text x="59" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">02</text>
+
+        <rect x="84" width="34" height="24" rx="6" fill="#2563eb" />
+        <text x="101" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">03</text>
+
+        <rect x="126" width="34" height="24" rx="6" fill="#2563eb" />
+        <text x="143" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">04</text>
+
+        <rect x="168" width="34" height="24" rx="6" fill="#2563eb" />
+        <text x="185" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">05</text>
+
+        <rect x="210" width="34" height="24" rx="6" fill="#2563eb" />
+        <text x="227" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">06</text>
+
+        <rect x="252" width="34" height="24" rx="6" fill="#2563eb" />
+        <text x="269" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">07</text>
+
+        <rect x="294" width="34" height="24" rx="6" fill="#10b981" />
+        <text x="311" y="16" font-family="sans-serif" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">08</text>
+      </g>
+      <text x="20" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" fill="#64748b">Tự động đồng bộ 2 chiều Google Sheets</text>
+    </g>
+  </g>
+
+  <!-- Bottom Brandmark & Domain -->
+  <g transform="translate(80, 560)">
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="600" font-size="14" fill="#64748b">
+      fcs-ai-workforce.vn • Hệ thống điều hành thông minh cho doanh nghiệp cung ứng &amp; quản trị lao động
+    </text>
+  </g>
+</svg>

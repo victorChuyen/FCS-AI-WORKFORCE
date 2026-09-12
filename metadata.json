@@ -1,0 +1,8 @@
+{
+  "name": "FCS AI Workforce OS",
+  "description": "FCS AI Workforce OS giúp doanh nghiệp tuyển dụng và cung ứng lao động kiểm soát hành trình từ đăng ký, phỏng vấn, đi làm đến chấm công xác minh trên một hệ thống duy nhất.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
