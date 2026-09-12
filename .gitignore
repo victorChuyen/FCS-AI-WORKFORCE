@@ -6,3 +6,16 @@ coverage/
 *.log
 .env*
 !.env.example
+*firebase-adminsdk*.json
+*serviceaccount*.json
+*.pem
+*.key
+.system_generated/
+scripts/read_advapi_cred.ps1
+scripts/read_creds.ps1
+scripts/find_cf_token.mjs
+scripts/get_wrangler_token.mjs
+scripts/github_repo_manager.mjs
+scripts/push_to_github.mjs
+scripts/bind_cf_domain.mjs
+scripts/add_domain_via_wrangler.mjs
