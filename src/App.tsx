@@ -16,6 +16,8 @@ import { RegisterPage } from './pages/auth/RegisterPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { CreateWorkerModal } from './components/workers/CreateWorkerModal';
 import { DocsModal } from './components/common/DocsModal';
+import { AppFooter } from './components/layout/AppFooter';
+import { FloatingVipContact } from './components/common/FloatingVipContact';
 import { AlertCircle, CheckCircle, Info, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from './config/env';
 
@@ -35,7 +37,12 @@ const AppContent: React.FC = () => {
 
   // Public Routes
   if (currentRoute === '/') {
-    return <LandingPage onNavigate={navigateTo} />;
+    return (
+      <>
+        <LandingPage onNavigate={navigateTo} />
+        <FloatingVipContact />
+      </>
+    );
   }
 
   if (currentRoute === '/login') {
@@ -198,17 +205,11 @@ const AppContent: React.FC = () => {
           {renderAppRoute()}
         </main>
 
-        {/* Footer */}
-        <footer className="bg-white border-t border-slate-200 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-4 text-center text-xs text-slate-500">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>
-              FCS AI WORKFORCE OS • Quản lý nhân lực thông minh • Chuẩn VWW Sprint 01
-            </span>
-            <span className="text-[11px] text-slate-400">
-              Hệ thống tối ưu cho 1 Quản lý + Tự động hóa
-            </span>
-          </div>
-        </footer>
+        {/* Luxury Enterprise Footer */}
+        <AppFooter onNavigate={navigateTo} />
+
+        {/* Global Floating VIP Quick Contact */}
+        <FloatingVipContact />
 
         {/* Global Modals */}
         <CreateWorkerModal

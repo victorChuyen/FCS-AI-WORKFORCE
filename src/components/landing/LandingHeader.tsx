@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import { Menu, X, ArrowRight, LogIn, UserCheck, ShieldCheck, LogOut } from 'lucide-react';
+import { Menu, X, ArrowRight, LogIn, UserCheck, ShieldCheck, LogOut, Calendar, MessageSquare } from 'lucide-react';
 
 interface LandingHeaderProps {
   onNavigate: (route: string) => void;
@@ -101,7 +101,30 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
           </nav>
 
           {/* Desktop Right CTA Actions */}
-          <div className="hidden sm:flex items-center space-x-3">
+          <div className="hidden sm:flex items-center space-x-2.5">
+            {/* VIP Advisory Quick Link */}
+            <a
+              href="https://cal.com/victorchuyen/coachai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden xl:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-500/30 text-[11px] font-bold text-indigo-200 transition-colors shadow-xs"
+              title="Đặt lịch tư vấn chiến lược 1:1 cùng Chairman Victor Chuyen"
+            >
+              <Calendar className="w-3.5 h-3.5 text-amber-300" />
+              <span>Tư Vấn 1:1</span>
+            </a>
+
+            <a
+              href="https://zalo.me/0989890022"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 transition-colors shadow-xs"
+              title="Chat Zalo Hotline: 0989890022"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Zalo 0989.890.022</span>
+            </a>
+
             {isAuthenticated ? (
               <>
                 <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
@@ -135,14 +158,14 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('/login')}
-                  className="px-3.5 py-2 text-slate-300 hover:text-white hover:bg-slate-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border border-transparent hover:border-slate-800"
+                  className="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border border-transparent hover:border-slate-800"
                 >
                   ĐĂNG NHẬP
                 </button>
                 <button
                   type="button"
                   onClick={() => onNavigate('/register')}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-600/25 group"
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-600/25 group"
                 >
                   <span>DÙNG THỬ</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -237,6 +260,28 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
                 >
                   Nhận AI Blueprint Miễn Phí
                 </button>
+              </div>
+
+              {/* Mobile VIP Advisory Links */}
+              <div className="pt-3 space-y-2 border-t border-slate-800/80">
+                <a
+                  href="https://zalo.me/0989890022"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center space-x-2"
+                >
+                  <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Chat Zalo: 0989.890.022</span>
+                </a>
+                <a
+                  href="https://cal.com/victorchuyen/coachai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full px-3 py-2.5 rounded-xl bg-indigo-950/50 border border-indigo-500/30 text-indigo-200 text-xs font-bold flex items-center space-x-2"
+                >
+                  <Calendar className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span>Đặt lịch tư vấn 1:1 (Cal.com)</span>
+                </a>
               </div>
             </div>
 

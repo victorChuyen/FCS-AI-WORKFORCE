@@ -62,6 +62,28 @@ export const FinalCTASection: React.FC<FinalCTASectionProps> = ({
             )}
           </div>
 
+          {/* Direct VIP Founder Consultation Bar */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="https://cal.com/victorchuyen/coachai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/90 border border-indigo-500/40 text-indigo-200 text-xs font-bold tracking-wide transition-all shadow-md cursor-pointer"
+            >
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
+              <span>ĐẶT LỊCH TƯ VẤN CHIẾN LƯỢC 1:1 (CAL.COM)</span>
+            </a>
+            <a
+              href="https://zalo.me/0989890022"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/90 border border-emerald-500/40 text-emerald-200 text-xs font-bold tracking-wide transition-all shadow-md cursor-pointer"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>CHAT TRỰC TIẾP ZALO: 0989.890.022</span>
+            </a>
+          </div>
+
           <div className="pt-4 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-slate-400">
             <span className="flex items-center space-x-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
