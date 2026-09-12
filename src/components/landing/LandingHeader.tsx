@@ -41,14 +41,11 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
   };
 
   const navLinks = [
-    { label: 'Điểm nghẽn', id: 'pain-section' },
     { label: 'Mô hình 1 Quản lý', id: 'one-manager-section' },
     { label: 'AI Agents', id: 'ai-agents-section' },
     { label: 'Golden Flow', id: 'golden-flow-section' },
     { label: 'Chuẩn VWW', id: 'vww-section' },
-    { label: 'Lộ trình', id: 'roadmap-section' },
     { label: 'Bảng giá', id: 'pricing-section' },
-    { label: 'Hỏi đáp', id: 'faq-section' },
   ];
 
   return (
@@ -100,36 +97,13 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
             ))}
           </nav>
 
-          {/* Desktop Right CTA Actions */}
-          <div className="hidden sm:flex items-center space-x-2.5">
-            {/* VIP Advisory Quick Link */}
-            <a
-              href="https://cal.com/victorchuyen/coachai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden xl:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-500/30 text-[11px] font-bold text-indigo-200 transition-colors shadow-xs"
-              title="Đặt lịch tư vấn chiến lược 1:1 cùng Chairman Victor Chuyen"
-            >
-              <Calendar className="w-3.5 h-3.5 text-amber-300" />
-              <span>Tư Vấn 1:1</span>
-            </a>
-
-            <a
-              href="https://zalo.me/0989890022"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 transition-colors shadow-xs"
-              title="Chat Zalo Hotline: 0989890022"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Zalo 0989.890.022</span>
-            </a>
-
+          {/* Desktop Right CTA Actions - Tinh gọn, không rối mắt */}
+          <div className="hidden sm:flex items-center space-x-3">
             {isAuthenticated ? (
               <>
                 <div className="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-slate-300 font-semibold max-w-[130px] truncate">
+                  <span className="text-slate-300 font-semibold max-w-[140px] truncate">
                     {user?.displayName || user?.email}
                   </span>
                 </div>
@@ -158,14 +132,14 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('/login')}
-                  className="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer border border-transparent hover:border-slate-800"
+                  className="px-3.5 py-2 text-slate-300 hover:text-white hover:bg-slate-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   ĐĂNG NHẬP
                 </button>
                 <button
                   type="button"
                   onClick={() => onNavigate('/register')}
-                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-600/25 group"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center space-x-1.5 cursor-pointer shadow-md shadow-blue-600/25 group"
                 >
                   <span>DÙNG THỬ</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />

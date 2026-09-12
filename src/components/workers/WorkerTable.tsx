@@ -39,22 +39,22 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
-      {/* 1. DESKTOP VIEW: Structured multi-column table */}
-      <div className="hidden md:block overflow-x-auto">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs">
+      {/* 1. DESKTOP VIEW: Structured multi-column table with STICKY HEADER */}
+      <div className="hidden md:block overflow-x-auto rounded-xl">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-              <th className="py-3.5 px-4">Worker ID</th>
-              <th className="py-3.5 px-4">Họ tên</th>
-              <th className="py-3.5 px-4">Số điện thoại</th>
-              <th className="py-3.5 px-4">Tỉnh/Thành</th>
-              <th className="py-3.5 px-4">Trạng thái</th>
-              <th className="py-3.5 px-4 hidden lg:table-cell">Văn phòng</th>
-              <th className="py-3.5 px-4 hidden lg:table-cell">Nhân viên phụ trách</th>
-              <th className="py-3.5 px-4 hidden xl:table-cell">Đối tác / Việc làm</th>
-              <th className="py-3.5 px-4">Cập nhật cuối</th>
-              <th className="py-3.5 px-4 text-right">Thao tác</th>
+            <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Worker ID</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Họ tên</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Số điện thoại</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Tỉnh/Thành</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Trạng thái</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 hidden lg:table-cell bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Văn phòng</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 hidden lg:table-cell bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Nhân viên phụ trách</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 hidden xl:table-cell bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Đối tác / Việc làm</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Cập nhật cuối</th>
+              <th className="sticky top-14 sm:top-16 z-20 py-3.5 px-4 text-right bg-slate-100/95 backdrop-blur-md border-b border-slate-300 shadow-2xs">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">

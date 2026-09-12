@@ -264,9 +264,9 @@ export const WorkerDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 6 SECTION TABS */}
-      <div className="border-b border-slate-200">
-        <div className="flex space-x-2 sm:space-x-4 overflow-x-auto pb-px">
+      {/* 6 SECTION TABS - CỐ ĐỊNH STICKY TOP TRÊN PC & MOBILE */}
+      <div className="sticky top-14 sm:top-16 z-30 bg-white/95 backdrop-blur-md border-y border-slate-200 shadow-2xs -mx-3 sm:-mx-6 px-3 sm:px-6 py-0.5 transition-all">
+        <div className="flex space-x-1 sm:space-x-3 overflow-x-auto pb-px no-scrollbar">
           {tabs.map(tab => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -274,7 +274,7 @@ export const WorkerDetailPage: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
+                className={`flex items-center space-x-2 py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition-all cursor-pointer min-h-[44px] shrink-0 ${
                   active
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-slate-500 hover:text-slate-800'

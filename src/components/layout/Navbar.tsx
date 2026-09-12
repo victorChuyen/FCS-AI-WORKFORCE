@@ -39,6 +39,7 @@ export const Navbar: React.FC = () => {
     availableTenants,
     switchTenant,
     checkHealth,
+    triggerRefresh,
   } = useApp();
 
   const { user: authUser, logout, loginWithPreset } = useAuth();
@@ -75,6 +76,10 @@ export const Navbar: React.FC = () => {
     try {
       await loginWithPreset(email);
       setUserMenuOpen(false);
+      triggerRefresh();
+      setTimeout(() => {
+        checkHealth();
+      }, 100);
     } catch (err) {
       console.error('Quick switch error:', err);
     }
@@ -118,8 +123,11 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-2xs">
+      {/* Top Navbar - Cố định 100% trên PC & Mobile iPhone / Android */}
+      <header
+        className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs transition-all"
+        style={{ top: 0, paddingTop: 'max(0px, env(safe-area-inset-top))' }}
+      >
         <div className="max-w-7xl mx-auto px-3 sm:px-6">
           <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
             

@@ -78,22 +78,27 @@ export async function callApi<T = any, P = any>(
   };
 
   try {
-    let authHeaders: Record<string, string> = {};
+    let token: string | null = null;
     try {
-      const token = await getIdToken();
-      if (token) {
-        authHeaders['Authorization'] = `Bearer ${token}`;
-      }
+      token = await getIdToken();
     } catch {
       // Graceful fallback if token retrieval fails
     }
 
+    if (token) {
+      (requestBody as any).idToken = token;
+      if (requestBody.identity) {
+        (requestBody.identity as any).idToken = token;
+      }
+    }
+
+    // Standard CORS-safe fetch: DO NOT pass custom Authorization header to Apps Script Web App
+    // because Apps Script does not support CORS OPTIONS preflight requests.
     const response = await fetch(API_BASE_URL, {
       method: 'POST',
       redirect: 'follow',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
-        ...authHeaders,
       },
       body: JSON.stringify(requestBody),
     });

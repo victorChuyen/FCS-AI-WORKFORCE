@@ -1,8 +1,33 @@
 @import "tailwindcss";
 
-html,
-body,
-#root {
+/* Fix triệt để CSS Sticky cho mọi trình duyệt PC & Mobile (iPhone / Android) */
+html {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+body {
+  max-width: 100%;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ẩn scrollbar nhưng vẫn vuốt cảm ứng mượt mà trên iOS/Android */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }

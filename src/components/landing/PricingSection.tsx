@@ -66,8 +66,8 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
         'Cam kết thỏa thuận mức dịch vụ (SLA) 99.9%',
         'Chuyên gia tư vấn tái cấu trúc quy trình đồng hành',
       ],
-      cta: 'LIÊN HỆ ĐẶT HÀNG TRIỂN KHAI',
-      ctaAction: onScrollToAudit,
+      cta: 'ĐẶT LỊCH 1:1 VỚI CHAIRMAN VICTOR',
+      ctaAction: () => window.open('https://cal.com/victorchuyen/coachai', '_blank'),
     },
   ];
 
