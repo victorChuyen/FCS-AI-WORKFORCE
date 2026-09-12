@@ -5,7 +5,6 @@ import {
   Phone,
   MessageSquare,
   ExternalLink,
-  Sparkles,
   Database,
   CheckCircle2,
   Lock,
@@ -32,53 +31,6 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onNavigate }) => {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-64 bg-gradient-to-b from-blue-900/10 via-transparent to-transparent pointer-events-none" />
 
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 py-14 relative z-10">
-        {/* VIP Founder Consultation Card */}
-        <div className="mb-14 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-950/90 via-indigo-950/70 to-slate-900/90 border border-blue-700/40 shadow-2xl shadow-blue-950/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="space-y-2 relative z-10 max-w-2xl">
-            <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-amber-400/20 text-amber-300 border border-amber-400/30 uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>VIP Founder Advisory</span>
-              </span>
-              <span className="text-xs text-slate-400 font-medium">• Tư vấn chiến lược 1:1</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Đồng Hành Trực Tiếp Cùng Chairman Victor Chuyen
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Dành riêng cho chủ doanh nghiệp cung ứng, chi nhánh tuyển dụng và công ty cho thuê lại lao động cần khảo sát điểm nghẽn, đóng gói quy trình Golden Flow hoặc triển khai giải pháp chuyên biệt.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3.5 shrink-0 relative z-10 w-full sm:w-auto">
-            {/* Cal.com Booking Button */}
-            <a
-              href="https://cal.com/victorchuyen/coachai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs tracking-wider uppercase shadow-xl shadow-blue-900/50 transition-all transform hover:-translate-y-0.5 cursor-pointer border border-blue-400/30"
-            >
-              <Calendar className="w-4 h-4 text-amber-300" />
-              <span>ĐẶT LỊCH TƯ VẤN 1:1 (CAL.COM)</span>
-              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-            </a>
-
-            {/* Zalo Direct Chat Button */}
-            <a
-              href="https://zalo.me/0989890022"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs tracking-wider uppercase shadow-xl shadow-emerald-950/50 transition-all transform hover:-translate-y-0.5 cursor-pointer border border-emerald-400/30"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>CHAT ZALO: 0989.890.022</span>
-              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-            </a>
-          </div>
-        </div>
-
         {/* 5 Columns Luxury Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-slate-900">
           {/* Brand Col */}

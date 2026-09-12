@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import { Menu, X, ArrowRight, LogIn, UserCheck, ShieldCheck, LogOut, Calendar, MessageSquare } from 'lucide-react';
+import { Menu, X, ArrowRight, LogIn, UserCheck, ShieldCheck, LogOut } from 'lucide-react';
 
 interface LandingHeaderProps {
   onNavigate: (route: string) => void;
@@ -234,28 +234,6 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
                 >
                   Nhận AI Blueprint Miễn Phí
                 </button>
-              </div>
-
-              {/* Mobile VIP Advisory Links */}
-              <div className="pt-3 space-y-2 border-t border-slate-800/80">
-                <a
-                  href="https://zalo.me/0989890022"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center space-x-2"
-                >
-                  <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Chat Zalo: 0989.890.022</span>
-                </a>
-                <a
-                  href="https://cal.com/victorchuyen/coachai"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full px-3 py-2.5 rounded-xl bg-indigo-950/50 border border-indigo-500/30 text-indigo-200 text-xs font-bold flex items-center space-x-2"
-                >
-                  <Calendar className="w-4 h-4 text-amber-300 shrink-0" />
-                  <span>Đặt lịch tư vấn 1:1 (Cal.com)</span>
-                </a>
               </div>
             </div>
 
