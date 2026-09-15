@@ -19,3 +19,7 @@ scripts/github_repo_manager.mjs
 scripts/push_to_github.mjs
 scripts/bind_cf_domain.mjs
 scripts/add_domain_via_wrangler.mjs
+# Local runtime secrets and private provisioning inputs
+.dev.vars*
+*service-account*.json
+*.provisioning.local.json
