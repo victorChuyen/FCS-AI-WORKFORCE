@@ -21,7 +21,7 @@ jobs:
           node-version: '22.16.0'
           package-manager-cache: false
       - run: npm ci --ignore-scripts
-      - run: node --test tests/security/auth-hardening.test.cjs
+      - run: node --test tests/security/*.test.cjs
   build-and-types:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -35,5 +35,5 @@ jobs:
           package-manager-cache: false
       - run: npm ci --ignore-scripts
       - run: npm run build
-      # Baseline firebase-admin dependency gaps must remain visible, not be masked.
+      # Keep the full semantic TypeScript check; never mask missing SDK types.
       - run: npm run lint
