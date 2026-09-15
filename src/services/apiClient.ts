@@ -1,148 +1,57 @@
 import { API_BASE_URL } from '../config/env';
 import { ApiResponse } from '../types';
-import { getIdToken } from './auth';
-
-let currentUserMetadata = {
-  firebaseUid: 'UID-COACH-CHUYEN',
-  email: 'coach.chuyen@gmail.com',
-  role: 'PLATFORM_SUPER_ADMIN',
-  tenantId: 'FCS-000001',
-  officeId: 'OFF-01',
-  staffId: 'STF-001',
-};
-
+import { getAuthenticatedSession, getCurrentUser } from './auth';
+// Metadata is a routing hint, NEVER identity or authorization.
+let currentUserMetadata = { firebaseUid: '', email: '', role: '', tenantId: '', officeId: '', staffId: '' };
+let metadataVersion = 0;
 export const setApiUserMetadata = (meta: Partial<typeof currentUserMetadata>) => {
+  metadataVersion++;
   currentUserMetadata = { ...currentUserMetadata, ...meta };
 };
-
 export const getApiUserMetadata = () => ({ ...currentUserMetadata });
-
 export interface ApiStandardRequest<P = any> {
-  action: string;
-  requestId: string;
-  timestamp: number;
-  identity: {
-    firebaseUid: string;
-    email: string;
-    role: string;
-    staffId: string;
-  };
-  requestedTenantId: string;
-  payload: P;
+  action: string; requestId: string; timestamp: number; idToken: string;
+  identity: { firebaseUid: string; email: string; role: string; staffId: string };
+  requestedTenantId: string; payload: P;
 }
-
-/**
- * Generic caller conforming strictly to FCS AI Workforce OS V4 Multi-Tenant Standard
- * 
- * Standard Request:
- * {
- *   "action": "worker.list",
- *   "requestId": "REQ-...",
- *   "timestamp": 1234567890,
- *   "identity": { "firebaseUid": "...", "email": "...", "role": "...", "staffId": "..." },
- *   "requestedTenantId": "FCS-000001",
- *   "payload": {}
- * }
- */
-export async function callApi<T = any, P = any>(
-  action: string,
-  payload: P = {} as P
-): Promise<ApiResponse<T>> {
-  const requestId = `REQ-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-  const timestamp = Date.now();
-
-  if (!API_BASE_URL || API_BASE_URL.trim().length === 0) {
-    return {
-      success: false,
-      data: null,
-      error: {
-        code: 'MISSING_API_URL',
-        message: 'Chưa cấu hình URL kết nối Google Apps Script Web App trong biến VITE_API_BASE_URL.',
-      },
-      requestId,
-    };
-  }
-
+export async function callApi<T = any, P = any>(action: string, payload: P = {} as P): Promise<ApiResponse<T>> {
+  const requestId = `REQ-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+  const failure = (code: string, message: string): ApiResponse<T> => ({ success: false, data: null, error: { code, message }, requestId });
+  let session: Awaited<ReturnType<typeof getAuthenticatedSession>>;
+  try { session = await getAuthenticatedSession(); }
+  catch { return failure('UNAUTHENTICATED', 'Vui l\u00f2ng \u0111\u0103ng nh\u1eadp l\u1ea1i.'); }
+  const { user, token } = session;
+  if (!token || !user?.tenantId || !user.uid || user.emailVerified !== true) return failure('UNAUTHENTICATED', 'Phi\u00ean x\u00e1c th\u1ef1c kh\u00f4ng h\u1ee3p l\u1ec7.');
+  const version = metadataVersion;
+  const requestedTenantId = currentUserMetadata.tenantId || user.tenantId;
+  if (!/^FCS-\d{6}$/.test(requestedTenantId) || (!user.isSuperAdmin && requestedTenantId !== user.tenantId)) return failure('FORBIDDEN', 'Kh\u00f4ng c\u00f3 quy\u1ec1n truy c\u1eadp tenant.');
+  if (action === 'tenant.select' && !user.isSuperAdmin) return failure('FORBIDDEN', 'Kh\u00f4ng c\u00f3 quy\u1ec1n chuy\u1ec3n tenant.');
+  let target: URL;
+  try { target = new URL(API_BASE_URL); }
+  catch { return failure('MISSING_API_URL', 'Ch\u01b0a c\u1ea5u h\u00ecnh API h\u1ee3p l\u1ec7.'); }
+  if (target.protocol !== 'https:') return failure('INSECURE_API_URL', 'API ph\u1ea3i s\u1eed d\u1ee5ng HTTPS.');
   const requestBody: ApiStandardRequest<P> = {
-    action,
-    requestId,
-    timestamp,
-    identity: {
-      firebaseUid: currentUserMetadata.firebaseUid || currentUserMetadata.staffId,
-      email: currentUserMetadata.email,
-      role: currentUserMetadata.role,
-      staffId: currentUserMetadata.staffId,
-    },
-    requestedTenantId: currentUserMetadata.tenantId || 'FCS-000001',
-    payload,
+    action, requestId, timestamp: Date.now(), idToken: token,
+    identity: { firebaseUid: user.uid, email: user.email, role: user.role, staffId: user.staffId || '' },
+    requestedTenantId, payload,
   };
-
+  const isAppsScript = target.hostname === 'script.google.com';
   try {
-    let authHeaders: Record<string, string> = {};
-    try {
-      const token = await getIdToken();
-      if (token) {
-        authHeaders['Authorization'] = `Bearer ${token}`;
-      }
-    } catch {
-      // Graceful fallback if token retrieval fails
-    }
-
     const response = await fetch(API_BASE_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-        ...authHeaders,
-      },
+      method: 'POST', redirect: 'follow',
+      // A paired backend MUST verify idToken before using any identity/tenant hint.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8', ...(isAppsScript ? {} : { Authorization: `Bearer ${token}` }) },
       body: JSON.stringify(requestBody),
     });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        data: null,
-        error: {
-          code: `HTTP_${response.status}`,
-          message: 'Không thể kết nối đến máy chủ Google Apps Script. Mã phản hồi: ' + response.status,
-        },
-        requestId,
-      };
-    }
-
-    const resJson = await response.json();
-    if (resJson && typeof resJson === 'object') {
-      return {
-        success: Boolean(resJson.success),
-        data: (resJson.data ?? null) as T | null,
-        error: resJson.error || (resJson.success ? null : {
-          code: 'API_ERROR',
-          message: 'Hệ thống báo lỗi trong quá trình xử lý dữ liệu.',
-        }),
-        requestId: resJson.requestId || requestId,
-      };
-    }
-
+    if (!response.ok) return failure(`HTTP_${response.status}`, 'M\u00e1y ch\u1ee7 t\u1eeb ch\u1ed1i y\u00eau c\u1ea7u.');
+    const json = await response.json();
+    if (version !== metadataVersion || getCurrentUser()?.uid !== user.uid) return failure('SESSION_CHANGED', 'Phi\u00ean truy c\u1eadp \u0111\u00e3 thay \u0111\u1ed5i.');
+    if (!json || typeof json.success !== 'boolean') return failure('INVALID_RESPONSE', 'Ph\u1ea3n h\u1ed3i API kh\u00f4ng h\u1ee3p l\u1ec7.');
     return {
-      success: false,
-      data: null,
-      error: {
-        code: 'INVALID_RESPONSE',
-        message: 'Định dạng dữ liệu trả về từ Google Apps Script không hợp lệ.',
-      },
-      requestId,
+      success: json.success, data: json.success ? (json.data ?? null) : null,
+      error: json.success ? null : (json.error || { code: 'API_ERROR', message: 'Y\u00eau c\u1ea7u kh\u00f4ng th\u00e0nh c\u00f4ng.' }),
+      requestId: json.requestId || requestId,
     };
-  } catch (err: any) {
-    return {
-      success: false,
-      data: null,
-      error: {
-        code: 'NETWORK_ERROR',
-        message: err?.message || 'Chưa kết nối được Google Apps Script backend.',
-      },
-      requestId,
-    };
-  }
+  } catch { return failure('NETWORK_ERROR', 'Kh\u00f4ng k\u1ebft n\u1ed1i \u0111\u01b0\u1ee3c API.'); }
 }
-
 export default callApi;
