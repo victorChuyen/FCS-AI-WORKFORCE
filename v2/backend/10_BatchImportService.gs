@@ -63,9 +63,12 @@ function handleBatchImportWorkersV2_(payload, ss) {
   var dDealIdIdx = dHeaders.indexOf("deal_id");
 
   var workerRecentDealMap = {};
+  var worker24hCompanyDealMap = {};
   var currentYear = new Date().getFullYear();
   var maxDealNum = 0;
   var thirtyDaysAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+  var oneDayAgo = new Date().getTime() - 24 * 60 * 60 * 1000;
+  var dCompIdx = dHeaders.indexOf("target_company");
 
   for (var j = 1; j < dData.length; j++) {
     var dRow = dData[j];
@@ -76,6 +79,10 @@ function handleBatchImportWorkersV2_(payload, ss) {
 
     if (dWid && dTime > thirtyDaysAgo) {
       workerRecentDealMap[dWid] = true;
+    }
+    if (dWid && dTime > oneDayAgo) {
+      var dComp = (dCompIdx !== -1 && dRow[dCompIdx] ? dRow[dCompIdx] : "").toString().trim().toUpperCase();
+      worker24hCompanyDealMap[dWid + "_" + dComp] = true;
     }
 
     var didMatch = did.match(/DL-\d{4}-(\d+)/);
@@ -97,7 +104,8 @@ function handleBatchImportWorkersV2_(payload, ss) {
     deals_created: 0,
     valid_c3_count: 0,
     duplicate_c3_1_count: 0,
-    invalid_c3_2_count: 0
+    invalid_c3_2_count: 0,
+    skipped_count: 0
   };
 
   var dealRowStart = dealSheet.getLastRow() + 1;
@@ -168,6 +176,13 @@ function handleBatchImportWorkersV2_(payload, ss) {
       stats.new_workers_created++;
     }
 
+    // Idempotency: Kiểm tra nếu Worker đã có Deal trong vòng 24 giờ cho cùng 1 nhà máy mục tiêu
+    var compKey = (targetComp || defaultCompany).toString().trim().toUpperCase();
+    if (existingWorkerId && worker24hCompanyDealMap[existingWorkerId + "_" + compKey]) {
+      stats.skipped_count++;
+      continue; // Tuyệt đối không tạo Deal trùng lặp (Idempotency)
+    }
+
     // Kiểm tra trùng lặp Deal trong 30 ngày
     if (targetStage !== "C3.2") {
       if (workerRecentDealMap[workerId]) {
@@ -206,6 +221,7 @@ function handleBatchImportWorkersV2_(payload, ss) {
 
     newDealRows.push(dealRow);
     stats.deals_created++;
+    worker24hCompanyDealMap[workerId + "_" + compKey] = true;
   }
 
   // 4. Batch write vào Sheet
@@ -231,6 +247,9 @@ function handleBatchImportWorkersV2_(payload, ss) {
     to_stage: "C3",
     metadata: stats
   }, ss);
+
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,

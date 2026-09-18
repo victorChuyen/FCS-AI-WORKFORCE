@@ -92,7 +92,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       title: 'Chuyên viên Tuyển dụng (FCS 1)',
       badge: 'RECRUITER',
       badgeColor: 'bg-amber-950/80 text-amber-200 border-amber-600/40',
-      desc: 'Tư vấn L1.1 - L1.8 & hẹn phỏng vấn L2 (khóa export)',
+      desc: 'Tư vấn L1.1 - L1.7 & hẹn phỏng vấn L2 (khóa export)',
     },
     {
       email: 'mkt-fcs@breaths.live',

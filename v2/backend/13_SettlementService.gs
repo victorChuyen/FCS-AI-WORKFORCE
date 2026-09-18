@@ -213,6 +213,9 @@ function handleApproveCommissionV2_(payload, ss) {
 
   SpreadsheetApp.flush();
 
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     message: "Đã cập nhật trạng thái hoa hồng (" + newStatus + ") cho " + updatedCount + " Deal!",

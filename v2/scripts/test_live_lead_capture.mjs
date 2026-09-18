@@ -3,13 +3,13 @@
  * Kiểm tra thực tế endpoint v2.lead.capture & v2.leads.list trên Google Apps Script thật
  */
 
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxPI-_hcpNRHfO5vO5y1LpDPDaG6K3d3oGojTAJTRZCq7VkutLJq0jXqrKH0XJVtEuaww/exec';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyFHP51wW1sb_ES3iOx2Yltq--Isq-yr1JgUF4ysw6LE7ksX58VPoryHTFMA0R9nK1qmQ/exec';
 
 async function postApi(action, payload) {
-  const res = await fetch(WEB_APP_URL, {
+  const res = await fetch(`${WEB_APP_URL}?action=${action}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, payload })
+    body: JSON.stringify(payload)
   });
   return await res.json();
 }

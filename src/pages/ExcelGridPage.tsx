@@ -8,6 +8,8 @@ import { EditWorkerModal } from '../components/worker360/EditWorkerModal';
 import { ReactivationInviteModal } from '../components/workers/ReactivationInviteModal';
 import { FileSpreadsheet, Users, GitFork, RefreshCw } from 'lucide-react';
 
+import { dealApi } from '../services/api/dealApi';
+
 export const ExcelGridPage: React.FC = () => {
   const { navigateTo, setShowCreateWorkerModal, showNotification, currentUser, refreshKey } = useApp();
 
@@ -23,33 +25,20 @@ export const ExcelGridPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await api.getWorkers();
-      if (res.data) {
-        setWorkers(res.data);
+      // Tải song song cả Workers thật và Deals thật từ Backend V2
+      const [wRes, dRes] = await Promise.all([
+        api.getWorkers(),
+        dealApi.getDeals({ limit: 500 })
+      ]);
 
-        // Sinh dữ liệu Deals từ workers nếu chưa có bảng Deals riêng
-        const generatedDeals = res.data.map((w: any, idx: number) => ({
-          deal_id: `DL-2026-${('000000' + (idx + 1)).slice(-6)}`,
-          worker_id: w.id || `WK-${('000000' + (idx + 1)).slice(-6)}`,
-          full_name: w.name || w.fullName || 'LAO ĐỘNG MỚI',
-          phone: w.phone || '',
-          target_company: w.partnerName || 'WNC',
-          branch: w.officeName || 'HÀ NAM',
-          level_sale_status: w.status === 'WORKING' ? 'L3' : w.status === 'PASSED' ? 'L2.1' : 'C3',
-          interview_date: w.interviewDate || '',
-          interview_result: w.interviewStatus || 'Chờ kết quả',
-          start_date: w.startDate || '',
-          actual_work_status: w.status === 'WORKING' ? 'Đang làm việc' : 'Chưa đi làm',
-          is_vww: w.status === 'WORKING',
-          assigned_sale: w.recruiterName || 'Sale Tuyển dụng',
-          commission_amount: 500000,
-          commission_status: 'Chờ duyệt',
-          notes: 'Đồng bộ từ CRM'
-        }));
-        setDeals(generatedDeals);
+      if (wRes && wRes.data) {
+        setWorkers(wRes.data);
+      }
+      if (dRes && dRes.data) {
+        setDeals(dRes.data);
       }
     } catch (err) {
-      showNotification('Không thể tải dữ liệu bảng tính', 'warning');
+      showNotification('Không thể tải dữ liệu bảng tính thật từ hệ thống', 'warning');
     } finally {
       setLoading(false);
     }

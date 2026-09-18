@@ -149,6 +149,9 @@ function handleCreateWorkerV2_(payload, ss) {
       reason_notes: "Tạo mới hồ sơ Master Worker 34 trường VNeID"
     });
 
+    // Bump version để tự động invalidate cache
+    CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
     var createdWorker = {
       worker_id: newWorkerId,
       full_name: fullName,
@@ -394,6 +397,8 @@ function handleUpdateWorkerV2_(payload, ss) {
     }
   }
 
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     worker_id: workerId,
@@ -451,6 +456,8 @@ function handleSoftDeleteWorkerV2_(payload, ss) {
     new_value: "ĐÃ XÓA (DELETED)",
     reason_notes: reason
   });
+
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,

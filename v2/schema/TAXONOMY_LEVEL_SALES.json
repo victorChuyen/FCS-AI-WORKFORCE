@@ -9,7 +9,7 @@
   { "code": "L1.4", "name": "L1.4. TB, KNM, MB", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
   { "code": "L1.5", "name": "L1.5. Thừa tuổi từ 45 tuổi trở lên", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
   { "code": "L1.6", "name": "L1.6. Hẹn gọi lại", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
-  { "code": "L1.8", "name": "L1.8. Lao động thiếu tuổi", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L1.7", "name": "L1.7. Lao động thiếu tuổi", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
   { "code": "L2", "name": "L2. Lao động hẹn phỏng vấn", "group": "INTERVIEW", "role_scope": ["Hiện trường", "Sale", "Manager"] },
   { "code": "L2.1", "name": "L2.1. Lao động đỗ phỏng vấn", "group": "INTERVIEW", "role_scope": ["Hiện trường", "Sale", "Manager"] },
   { "code": "L2.2", "name": "L2.2. Lao động trượt phỏng vấn", "group": "INTERVIEW", "role_scope": ["Hiện trường", "Sale", "Manager"] },

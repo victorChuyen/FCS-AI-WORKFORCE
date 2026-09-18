@@ -11,7 +11,7 @@ export const WORKER_STATUS_LABELS: Record<WorkerStatus, string> = {
   [WorkerStatus.UNREACHABLE]: 'TB / KNM / MB (L1.4)',
   [WorkerStatus.OVERAGE]: 'Thừa tuổi ≥45 (L1.5)',
   [WorkerStatus.CALLBACK]: 'Hẹn gọi lại (L1.6)',
-  [WorkerStatus.UNDERAGE]: 'Thiếu tuổi (L1.8)',
+  [WorkerStatus.UNDERAGE]: 'Thiếu tuổi (L1.7)',
   [WorkerStatus.INTERVIEW_PENDING]: 'Hẹn phỏng vấn (L2)',
   [WorkerStatus.INTERVIEWED]: 'Đã phỏng vấn',
   [WorkerStatus.PASSED]: 'Đỗ phỏng vấn (L2.1)',

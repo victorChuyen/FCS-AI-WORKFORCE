@@ -12,7 +12,7 @@ function setupAuditLogSheet_(ss) {
   var sheet = getOrCreateSheet_(ss, V2_CONFIG.TAB_AUDIT_LOG);
   if (sheet.getLastRow() === 0) {
     var headers = [
-      "log_id", "timestamp", "actor_email", "actor_role", "sheet_name",
+      "log_id", "tenant_id", "timestamp", "actor_email", "actor_role", "sheet_name",
       "record_id", "action", "field_name", "old_value", "new_value", "reason_notes"
     ];
     sheet.appendRow(headers);
@@ -36,6 +36,7 @@ function logAuditActionV2_(ss, log) {
 
     sheet.appendRow([
       logId,
+      log.tenant_id || V2_CONFIG.PILOT_TENANT_ID,
       now.toISOString(),
       log.actor_email || "",
       log.actor_role || "",
@@ -58,6 +59,7 @@ function logAuditActionV2_(ss, log) {
 function appendAuditLogV2_(logObj, ss) {
   if (!ss) ss = getSpreadsheetV2_();
   logAuditActionV2_(ss, {
+    tenant_id: logObj.tenant_id || V2_CONFIG.PILOT_TENANT_ID,
     actor_email: logObj.actor_email || "",
     actor_role: logObj.actor_id || "USER",
     sheet_name: logObj.sheet_name || V2_CONFIG.TAB_DEALS,
@@ -83,18 +85,23 @@ function handleListAuditLogsV2_(params, ss) {
   var limit = parseInt((params && params.limit) || "50", 10);
   var recordIdFilter = ((params && params.record_id) || "").toString().trim();
   var sheetFilter = ((params && params.sheet_name) || "").toString().trim();
+  var tenantFilter = ((params && params.tenant_id) || "").toString().trim();
 
   var items = [];
   var idIdx = headers.indexOf("record_id");
   var sheetIdx = headers.indexOf("sheet_name");
+  var tenantIdx = headers.indexOf("tenant_id");
 
   // Lấy các dòng mới nhất ở cuối sheet
   for (var i = data.length - 1; i >= 1; i--) {
     var row = data[i];
-    if (recordIdFilter && (row[idIdx] || "").toString().indexOf(recordIdFilter) === -1) {
+    if (tenantFilter && tenantIdx !== -1 && (row[tenantIdx] || "").toString().trim() !== tenantFilter) {
       continue;
     }
-    if (sheetFilter && (row[sheetIdx] || "").toString().indexOf(sheetFilter) === -1) {
+    if (recordIdFilter && idIdx !== -1 && (row[idIdx] || "").toString().indexOf(recordIdFilter) === -1) {
+      continue;
+    }
+    if (sheetFilter && sheetIdx !== -1 && (row[sheetIdx] || "").toString().indexOf(sheetFilter) === -1) {
       continue;
     }
 

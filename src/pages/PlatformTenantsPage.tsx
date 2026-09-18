@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { realApi } from '../services/realApi';
-import { Building2, Shield, CheckCircle2, AlertTriangle, ExternalLink, RefreshCw, Layers, Database, ArrowRight, Plus } from 'lucide-react';
+import { Building2, Shield, CheckCircle2, AlertTriangle, ExternalLink, RefreshCw, Layers, Database, ArrowRight, Plus, Trash2, ShieldAlert } from 'lucide-react';
+import { SuperAdminResetModal } from '../components/common/SuperAdminResetModal';
 
 interface TenantRecord {
   tenantId: string;
@@ -23,6 +24,7 @@ export const PlatformTenantsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [checkingTenantId, setCheckingTenantId] = useState<string | null>(null);
   const [healthMap, setHealthMap] = useState<Record<string, { dataOk: boolean; mgmtOk: boolean }>>({});
+  const [showResetModal, setShowResetModal] = useState<boolean>(false);
 
   const isSuperAdmin = currentUser.role === 'PLATFORM_SUPER_ADMIN' || currentUser.isSuperAdmin;
 
@@ -299,6 +301,40 @@ export const PlatformTenantsPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Super Admin Danger Zone */}
+      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-3.5">
+            <div className="p-3 bg-rose-100 rounded-xl text-rose-700 mt-0.5 shrink-0">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-rose-950">
+                Khu Vực Nguy Hiểm: Xóa Sạch Dữ Liệu & Reset Clean Slate
+              </h3>
+              <p className="text-xs text-rose-800 mt-1 max-w-2xl leading-relaxed">
+                Chức năng tối cao dành riêng cho Platform Super Admin để xóa trắng toàn bộ dữ liệu nghiệp vụ (11 bảng), dọn sạch các dòng lỗi công thức VLOOKUP và đưa hệ thống về trạng thái ban đầu để nạp dữ liệu chuẩn mới.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-200 flex items-center space-x-2 shrink-0 transition-all cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>XÓA SẠCH DATA (CLEAN SLATE)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Super Admin Reset Modal */}
+      <SuperAdminResetModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onSuccess={() => loadTenants()}
+      />
     </div>
   );
 };

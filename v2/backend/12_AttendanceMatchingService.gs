@@ -170,24 +170,24 @@ function handleMatchAttendanceAndVerifyVwwV2_(payload, ss) {
     }
 
     // Kiểm tra điều kiện VWW (Số ngày công >= threshold)
+    var rowIndexInArray = selectedDeal.rowNumber - 1; // 0-indexed trong mảng RAM dData
+
     if (workdays >= defaultThreshold) {
-      var rowToUpdate = selectedDeal.rowNumber;
-
-      // Cập nhật Deal sang L4 và đóng dấu is_vww = TRUE
-      dealSheet.getRange(rowToUpdate, dStageIdx + 1).setValue("L4");
-      dealSheet.getRange(rowToUpdate, dVwwIdx + 1).setValue(true);
-      dealSheet.getRange(rowToUpdate, dWorkStatusIdx + 1).setValue("Đã hết thời gian phí");
-
       var vwwNote = "[VWW XÁC MINH] Đạt " + workdays + " công (Ngưỡng: " + defaultThreshold + " công) tại " + (companyCode || "xưởng") + " tháng " + defaultMonth;
       if (factoryWorkerId) vwwNote += " | Mã thẻ: " + factoryWorkerId;
       var newNotes = selectedDeal.notes ? (selectedDeal.notes + " | " + vwwNote) : vwwNote;
 
-      dealSheet.getRange(rowToUpdate, dNotesIdx + 1).setValue(newNotes);
-      dealSheet.getRange(rowToUpdate, dUpdatedIdx + 1).setValue(nowIso);
-      dealSheet.getRange(rowToUpdate, dUserIdx + 1).setValue(actorEmail);
+      // Cập nhật trực tiếp trên RAM - Tốc độ O(1)
+      dData[rowIndexInArray][dStageIdx] = "L3"; // Giữ L3 (Đang đi làm) theo chuẩn North Star VWW
+      dData[rowIndexInArray][dVwwIdx] = true;
+      dData[rowIndexInArray][dWorkStatusIdx] = "Đang đi làm (Đạt chuẩn VWW)";
+      dData[rowIndexInArray][dNotesIdx] = newNotes;
+      dData[rowIndexInArray][dUpdatedIdx] = nowIso;
+      dData[rowIndexInArray][dUserIdx] = actorEmail;
 
+      hasChanges = true;
       selectedDeal.is_vww = true;
-      selectedDeal.stage = "L4";
+      selectedDeal.stage = "L3";
       stats.vww_newly_verified++;
 
       verifiedDealsList.push({
@@ -206,7 +206,7 @@ function handleMatchAttendanceAndVerifyVwwV2_(payload, ss) {
         actor_email: actorEmail,
         action: "VWW_VERIFIED_SUCCESS",
         from_stage: selectedDeal.stage,
-        to_stage: "L4",
+        to_stage: "L3",
         metadata: {
           workdays: workdays,
           threshold: defaultThreshold,
@@ -218,15 +218,22 @@ function handleMatchAttendanceAndVerifyVwwV2_(payload, ss) {
     } else {
       // Dưới ngưỡng công (Lao động nghỉ ngang hoặc chưa đủ ngày)
       stats.below_threshold_count++;
-      var rowIdx = selectedDeal.rowNumber;
       var subNote = "[CHƯA ĐẠT VWW] Chấm công ghi nhận: " + workdays + "/" + defaultThreshold + " công tháng " + defaultMonth;
       var currentN = selectedDeal.notes ? (selectedDeal.notes + " | " + subNote) : subNote;
-      dealSheet.getRange(rowIdx, dNotesIdx + 1).setValue(currentN);
-      dealSheet.getRange(rowIdx, dUpdatedIdx + 1).setValue(nowIso);
+      dData[rowIndexInArray][dNotesIdx] = currentN;
+      dData[rowIndexInArray][dUpdatedIdx] = nowIso;
+      hasChanges = true;
     }
   }
 
-  SpreadsheetApp.flush();
+  // GHI NGƯỢC LẠI TOÀN BỘ SHEET BẰNG ĐÚNG 1 LỆNH DUY NHẤT NGOÀI VÒNG LẶP
+  if (hasChanges) {
+    fullDealRange.setValues(dData);
+    SpreadsheetApp.flush();
+  }
+
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,

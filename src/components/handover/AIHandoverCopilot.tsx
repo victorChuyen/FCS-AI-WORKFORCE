@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { callAiRouter } from '../../services/aiRouterService';
+import { callAiRouter, getSmartFallbackResponse } from '../../services/aiRouterService';
 import { handoverApi, HandoverFeedbackItem, HandoverSignoffItem } from '../../services/api/handoverApi';
 import {
   devSupportApi,
@@ -234,7 +234,7 @@ Khi trao đổi với người dùng:
         },
       ]);
     } catch {
-      let fallbackText = `Em đã ghi nhận trao đổi: "${msgToSend}". Mọi nội dung đang được lưu trữ vào tab Google Sheet "${DEV_SUPPORT_TAB_NAME}". Em sẽ tiến hành kiểm tra mã nguồn và cập nhật ngay!`;
+      let fallbackText = getSmartFallbackResponse(msgToSend);
       setChatMessages(prev => [
         ...prev,
         {

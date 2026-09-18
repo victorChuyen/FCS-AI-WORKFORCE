@@ -66,7 +66,7 @@ export type PermissionCapability =
   | 'WORKER_EXPORT_EXCEL' // Xuất file Excel/CSV ra máy (Khóa với Sale chống mất data)
   // Deal & 19 Level Sale Kanban capabilities
   | 'DEAL_ASSIGN_SALE' // Phân bổ data C3 -> L1 cho Sale
-  | 'DEAL_MOVE_NURTURE' // Chuyển trạng thái L1.1 - L1.8
+  | 'DEAL_MOVE_NURTURE' // Chuyển trạng thái L1.1 - L1.7
   | 'INTERVIEW_SCHEDULE' // Đặt lịch hẹn phỏng vấn L2
   | 'INTERVIEW_CONFIRM_RESULT' // Duyệt Đỗ/Trượt L2.1, L2.2 (Hiện trường/Manager, Cấm Sale tự duyệt)
   | 'EMPLOYMENT_CONFIRM_STARTED' // Xác nhận lên xe đi làm L3 (Hiện trường/Manager)
@@ -209,7 +209,7 @@ export const ROLE_CAPABILITIES_MAP: Record<AppRole, PermissionCapability[]> = {
   ],
   RECRUITER: [
     'WORKER_CREATE',
-    'DEAL_MOVE_NURTURE', // L1.1 - L1.8
+    'DEAL_MOVE_NURTURE', // L1.1 - L1.7
     'INTERVIEW_SCHEDULE', // Hẹn phỏng vấn L2
   ],
   STAFF: [

@@ -22,7 +22,7 @@ export enum WorkerStatus {
   UNREACHABLE = 'UNREACHABLE',           // L1.4 (14) TB / KNM / MB (Thuê bao, Không nghe máy, Máy bận)
   OVERAGE = 'OVERAGE',                   // L1.5 (15) Thừa tuổi (≥45)
   CALLBACK = 'CALLBACK',                 // L1.6 (16) Hẹn gọi lại
-  UNDERAGE = 'UNDERAGE',                 // L1.8 (18) Thiếu tuổi
+  UNDERAGE = 'UNDERAGE',                 // L1.7 (18) Thiếu tuổi (<18)
 
   // ── L2: Phỏng vấn (Hiện trường) ──
   INTERVIEW_PENDING = 'INTERVIEW_PENDING', // L2   (20) Hẹn phỏng vấn

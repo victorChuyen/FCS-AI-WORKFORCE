@@ -145,6 +145,9 @@ function handleCreateDealV2_(payload, ss) {
       reason_notes: "Tạo Deal ứng tuyển mới cho " + workerId
     });
 
+    // Bump version để tự động invalidate cache
+    CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
     return {
       success: true,
       data: dealObj,
@@ -421,6 +424,9 @@ function handleMoveStageV2_(payload, ss) {
       updated_at: nowIso
     };
 
+    // Bump version để tự động invalidate cache
+    CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
     return {
       success: true,
       data: updatedDeal,
@@ -572,6 +578,9 @@ function handleUpdateDealV2_(payload, ss) {
   if (updatedIdx !== -1) sheet.getRange(rowIndex, updatedIdx + 1).setValue(nowIso);
   if (userIdx !== -1) sheet.getRange(rowIndex, userIdx + 1).setValue(payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL);
 
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     deal_id: dealId,
@@ -612,11 +621,20 @@ function handleSoftDeleteDealV2_(payload, ss) {
 
   if (rowIndex === -1) return { success: false, error: "Không tìm thấy Deal " + dealId };
 
-  var deleteNote = "[DELETED: " + new Date().toISOString() + " by " + (payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL) + "] Lý do: " + reason;
-  sheet.getRange(rowIndex, stageIdx + 1).setValue("DELETED");
+  var currentRow = data[rowIndex - 1];
+  var currentNotes = (notesIdx !== -1 && currentRow[notesIdx]) ? String(currentRow[notesIdx]) : "";
+  var deleteTag = "[DELETED: " + new Date().toISOString() + " by " + (payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL) + "] Lý do: " + reason;
+  var newNotes = currentNotes ? (deleteTag + " | " + currentNotes) : deleteTag;
+
+  // GIỮ NGUYÊN stageIdx (không đổi level_sale_status để bảo toàn lịch sử chặng)
   if (notesIdx !== -1) {
-    sheet.getRange(rowIndex, notesIdx + 1).setValue(deleteNote);
+    sheet.getRange(rowIndex, notesIdx + 1).setValue(newNotes);
   }
+  // Cập nhật updated_at và updated_by
+  var updatedIdx = headers.indexOf("updated_at");
+  var userIdx = headers.indexOf("updated_by");
+  if (updatedIdx !== -1) sheet.getRange(rowIndex, updatedIdx + 1).setValue(new Date().toISOString());
+  if (userIdx !== -1) sheet.getRange(rowIndex, userIdx + 1).setValue(payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL);
 
   logAuditActionV2_(ss, {
     actor_email: payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL,
@@ -624,17 +642,21 @@ function handleSoftDeleteDealV2_(payload, ss) {
     sheet_name: V2_CONFIG.TAB_DEALS,
     record_id: dealId,
     action: "SOFT_DELETE",
-    field_name: "level_sale_status",
-    old_value: oldStage,
-    new_value: "DELETED",
+    field_name: "notes",
+    old_value: currentNotes,
+    new_value: newNotes,
     reason_notes: reason
   });
+
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,
     deal_id: dealId,
-    status: "DELETED",
-    message: "Đã xóa mềm Deal tuyển dụng an toàn."
+    status: oldStage,
+    deleted: true,
+    message: "Đã xóa mềm Deal tuyển dụng an toàn (bảo toàn stage gốc " + oldStage + ")."
   };
 }
 
@@ -666,6 +688,7 @@ function handleListDealsV2_(params, ss) {
   var branchIdx = headers.indexOf("branch");
   var compIdx = headers.indexOf("target_company");
   var saleIdx = headers.indexOf("assigned_sale");
+  var notesIdx = headers.indexOf("notes");
 
   var filtered = [];
   for (var i = 1; i < data.length; i++) {
@@ -673,7 +696,8 @@ function handleListDealsV2_(params, ss) {
     var stageVal = (row[stageIdx] || "").toString();
 
     // Ẩn Deal bị xóa mềm nếu không yêu cầu
-    if (!includeDeleted && stageVal === "DELETED") {
+    var isDeleted = (stageVal === "DELETED") || (notesIdx !== -1 && String(row[notesIdx] || "").indexOf("[DELETED:") !== -1);
+    if (!includeDeleted && isDeleted) {
       continue;
     }
 

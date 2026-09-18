@@ -90,7 +90,9 @@ const expectedActions = [
   'v2.settlement.report',
   'v2.settlement.approve',
   'v2.lead.capture',
-  'v2.leads.list'
+  'v2.leads.list',
+  'v2.system.reset',
+  'v2.devsupport.log'
 ];
 
 expectedActions.forEach(action => {

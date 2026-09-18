@@ -66,6 +66,8 @@ const ACTION_ALIAS_MAP: Record<string, string> = {
   'taxonomy.get': 'v2.taxonomy.get',
   'master.taxonomy': 'v2.taxonomy.get',
   'pipeline.events': 'v2.pipeline.events',
+  'bootstrap': 'v2.bootstrap',
+  'system.bootstrap': 'v2.bootstrap',
 };
 
 export async function callApi<T = any, P = any>(

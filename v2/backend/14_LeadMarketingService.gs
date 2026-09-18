@@ -253,6 +253,9 @@ function handleCaptureLeadV2_(payload, ss) {
     );
   } catch(e) {}
 
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     data: {

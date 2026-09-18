@@ -67,13 +67,25 @@ export const devSupportApi = {
       console.warn('LocalStorage notice:', e);
     }
 
-    // 2. Transmit to Google Apps Script backend
+    // 2. Transmit thực sự đến Google Apps Script endpoint mới
     try {
-      await callApi('v2.deal.move_stage', {
-        notes: `[DEV SUPPORT TAB ${DEV_SUPPORT_TAB_NAME}] ${id} | ${newTicket.category}: ${newTicket.goal.slice(0, 80)} -> ${newTicket.expectedOutput.slice(0, 80)}`
+      const apiRes = await callApi('v2.devsupport.log', {
+        ticket: newTicket
       });
-    } catch {
-      // Backend fallback handled gracefully
+      if (!apiRes.success) {
+        console.warn('Lỗi ghi Sheet từ Backend:', apiRes.error);
+        return {
+          success: false,
+          ticket: newTicket,
+          message: `Lỗi kết nối Sheet: ${apiRes.error?.message || 'Không thể ghi dữ liệu'}`
+        };
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        ticket: newTicket,
+        message: `Lỗi đường truyền: ${err.message}`
+      };
     }
 
     return {

@@ -23,6 +23,7 @@ var V2_CONFIG = {
   SPREADSHEET_ID: "1YAVNiPtAiYrxEThvIgWuR0PAHJbDCDqrXCz5SNwrxXE",
   
   // Tab Names theo Phương án 1 (Chuẩn tuần tự 01, 02, 03, 04)
+  TAB_DASHBOARD_KPI: "00_DASHBOARD_KPI",
   TAB_WORKERS: "01_MASTER_WORKERS",
   TAB_DEALS: "02_CRM_DEALS_2026",
   TAB_AUDIT_LOG: "03_AUDIT_LOG",
@@ -76,6 +77,125 @@ function getOrCreateSheet_(ss, name) {
 }
 
 /**
+ * Versioned + Tenant-Scoped Cache Helper
+ * Tuân thủ nghiêm ngặt FCS_DEV_AI_PERFORMANCE_GUARDRAILS_V2_1 Section 4 (Task C) & Section 5
+ */
+var CacheHelper_ = {
+  // Lấy data_version hiện tại cho tenant
+  getDataVersion: function(tenantId) {
+    tenantId = tenantId || V2_CONFIG.PILOT_TENANT_ID;
+    try {
+      var cache = CacheService.getScriptCache();
+      var v = cache.get("v2:" + tenantId + ":data_version");
+      if (v) return parseInt(v, 10);
+    } catch(e) {}
+    return 1;
+  },
+
+  // Bump version khi có mutation (deal.create, worker.create, deal.move_stage...)
+  bumpDataVersion: function(tenantId) {
+    tenantId = tenantId || V2_CONFIG.PILOT_TENANT_ID;
+    try {
+      var current = this.getDataVersion(tenantId);
+      var next = current + 1;
+      var cache = CacheService.getScriptCache();
+      cache.put("v2:" + tenantId + ":data_version", next.toString(), 21600); // 6 hours
+      return next;
+    } catch(e) {
+      return 1;
+    }
+  },
+
+  // Lấy dữ liệu cached theo tenant và version
+  get: function(tenantId, resourceKey) {
+    tenantId = tenantId || V2_CONFIG.PILOT_TENANT_ID;
+    try {
+      var cache = CacheService.getScriptCache();
+      var version = this.getDataVersion(tenantId);
+      var fullKey = "v2:" + tenantId + ":" + resourceKey + ":v" + version;
+      var cached = cache.get(fullKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch(e) {}
+    return null;
+  },
+
+  // Lưu dữ liệu vào cache với tenant và version
+  put: function(tenantId, resourceKey, data, ttlSeconds) {
+    tenantId = tenantId || V2_CONFIG.PILOT_TENANT_ID;
+    try {
+      var cache = CacheService.getScriptCache();
+      var version = this.getDataVersion(tenantId);
+      var fullKey = "v2:" + tenantId + ":" + resourceKey + ":v" + version;
+      var payloadStr = JSON.stringify(data);
+      // CacheService limit per item is 100KB
+      if (payloadStr.length < 95000) {
+        cache.put(fullKey, payloadStr, ttlSeconds || 60);
+      }
+    } catch(e) {}
+  },
+
+  // Taxonomy Cache (TTL dài 6 giờ, tách biệt với mutation thường)
+  getTaxonomy: function() {
+    try {
+      var cache = CacheService.getScriptCache();
+      var cached = cache.get("v2:master:taxonomy:v1");
+      if (cached) return JSON.parse(cached);
+    } catch(e) {}
+    return null;
+  },
+
+  putTaxonomy: function(data) {
+    try {
+      var cache = CacheService.getScriptCache();
+      var payloadStr = JSON.stringify(data);
+      if (payloadStr.length < 95000) {
+        cache.put("v2:master:taxonomy:v1", payloadStr, 21600); // 6 hours
+      }
+    } catch(e) {}
+  }
+};
+
+/**
+ * Thiết lập tab 00_DASHBOARD_KPI với Bounded Native Formulas
+ * Tuân thủ Section 6 & Section 8 của Guardrails V2.1 (bounded ranges, soft-delete filtering)
+ */
+function setupDashboardKpiSheet_(ss) {
+  if (!ss) ss = getSpreadsheetV2_();
+  if (!ss) return;
+
+  var kpiSheet = getOrCreateSheet_(ss, V2_CONFIG.TAB_DASHBOARD_KPI);
+  if (kpiSheet.getLastRow() <= 1) {
+    kpiSheet.clear();
+    kpiSheet.appendRow(["METRIC_KEY", "VALUE", "DESCRIPTION", "BOUNDED_FORMULA"]);
+    formatHeaderRow_(kpiSheet, 4, "#0F172A"); // Slate Dark
+
+    var kpiDefinitions = [
+      ["total_workers", "=COUNTA('01_MASTER_WORKERS'!A2:A50000)", "Tổng số hồ sơ Master Workers", "COUNTA(A2:A50000)"],
+      ["workers_deleted", "=COUNTIF('01_MASTER_WORKERS'!AE2:AE50000, \"*DELETED*\")", "Lao động đã đánh dấu xóa mềm", "COUNTIF(AE2:AE50000, *DELETED*)"],
+      ["workers_nam", "=COUNTIFS('01_MASTER_WORKERS'!D2:D50000, \"Nam\", '01_MASTER_WORKERS'!AE2:AE50000, \"<>*DELETED*\")", "Lao động Nam hoạt động", "COUNTIFS"],
+      ["workers_nu", "=COUNTIFS('01_MASTER_WORKERS'!D2:D50000, \"Nữ\", '01_MASTER_WORKERS'!AE2:AE50000, \"<>*DELETED*\")", "Lao động Nữ hoạt động", "COUNTIFS"],
+      ["total_deals", "=COUNTA('02_CRM_DEALS_2026'!A2:A50000)", "Tổng số Deals CRM 2026", "COUNTA(A2:A50000)"],
+      ["deals_deleted", "=COUNTIF('02_CRM_DEALS_2026'!S2:S50000, \"*DELETED*\")", "Deals đã đánh dấu xóa mềm", "COUNTIF(S2:S50000, *DELETED*)"],
+      ["total_vww", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L4*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "North Star VWW đã xác minh", "COUNTIFS(H2:H50000, L4*)"],
+      ["stage_c3", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"C3*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Tiếp nhận C3", "COUNTIFS(C3*)"],
+      ["stage_l1", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L1*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Chăm sóc L1", "COUNTIFS(L1*)"],
+      ["stage_l2", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L2*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Phỏng vấn L2", "COUNTIFS(L2*)"],
+      ["stage_l3", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L3*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Đi làm L3", "COUNTIFS(L3*)"],
+      ["stage_l4", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L4*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Nghiệm thu L4", "COUNTIFS(L4*)"],
+      ["total_commission", "=SUMIF('02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\", '02_CRM_DEALS_2026'!Q2:Q50000)", "Tổng hoa hồng dự kiến", "SUMIF(Q2:Q50000)"],
+      ["data_version", "=COUNTA('03_AUDIT_LOG'!A2:A50000)", "Chỉ số phiên bản dữ liệu tự động tăng", "COUNTA('03_AUDIT_LOG'!A2:A50000)"],
+      ["updated_at", "=NOW()", "Thời gian cập nhật thời gian thực của Sheet", "NOW()"]
+    ];
+
+    for (var r = 0; r < kpiDefinitions.length; r++) {
+      kpiSheet.appendRow(kpiDefinitions[r]);
+    }
+  }
+}
+
+/**
  * Đổi tên các tab hiện có trên Sheet sang Phương án 1 chuẩn tuần tự
  */
 function renameSheetsToOption1_(ss) {
@@ -95,7 +215,6 @@ function renameSheetsToOption1_(ss) {
     var sheet = ss.getSheetByName(oldName);
     var newName = renameMap[oldName];
     if (sheet && oldName !== newName) {
-      // Nếu đã có sheet tên newName thì không đổi đè
       var existing = ss.getSheetByName(newName);
       if (!existing) {
         sheet.setName(newName);
@@ -174,7 +293,7 @@ function validateWorkerPayloadOrReject_(payload) {
         return { isValid: false, error: "Năm sinh không hợp lệ (tuổi từ 15 đến 75)." };
       }
       if (age < 18) {
-        warnings.push("L1.8: Lao động thiếu tuổi (" + age + " tuổi < 18).");
+        warnings.push("L1.7: Lao động thiếu tuổi (" + age + " tuổi < 18).");
       } else if (age >= 45) {
         warnings.push("L1.5: Lao động thừa tuổi (" + age + " tuổi ≥ 45).");
       }
@@ -204,13 +323,13 @@ function normalizeStageCode_(stageInput) {
   var s = stageInput.toString().trim();
 
   var validStages = [
-    "C3", "C3.1", "C3.2", "L1", "L1.1", "L1.2", "L1.3", "L1.4", "L1.5", "L1.6", "L1.8",
+    "C3", "C3.1", "C3.2", "L1", "L1.1", "L1.2", "L1.3", "L1.4", "L1.5", "L1.6", "L1.7",
     "L2", "L2.1", "L2.2", "L2.3", "L3", "L3.1", "L3.2", "L4"
   ];
   if (validStages.indexOf(s) !== -1) return s;
 
   // Hỗ trợ nhận diện cả tên đầy đủ hoặc tiền tố, ví dụ: "C3. Lao động mới", "L2.1. Lao động đỗ phỏng vấn"
-  var match = s.match(/^(C3\.[12]|C3|L1\.[1234568]|L1|L2\.[123]|L2|L3\.[12]|L3|L4)/i);
+  var match = s.match(/^(C3\.[12]|C3|L1\.[1234567]|L1|L2\.[123]|L2|L3\.[12]|L3|L4)/i);
   if (match) {
     var code = match[1].toUpperCase();
     if (validStages.indexOf(code) !== -1) return code;
@@ -382,7 +501,7 @@ function setupAuditLogSheet_(ss) {
   var sheet = getOrCreateSheet_(ss, V2_CONFIG.TAB_AUDIT_LOG);
   if (sheet.getLastRow() === 0) {
     var headers = [
-      "log_id", "timestamp", "actor_email", "actor_role", "sheet_name",
+      "log_id", "tenant_id", "timestamp", "actor_email", "actor_role", "sheet_name",
       "record_id", "action", "field_name", "old_value", "new_value", "reason_notes"
     ];
     sheet.appendRow(headers);
@@ -406,6 +525,7 @@ function logAuditActionV2_(ss, log) {
 
     sheet.appendRow([
       logId,
+      log.tenant_id || V2_CONFIG.PILOT_TENANT_ID,
       now.toISOString(),
       log.actor_email || "",
       log.actor_role || "",
@@ -428,6 +548,7 @@ function logAuditActionV2_(ss, log) {
 function appendAuditLogV2_(logObj, ss) {
   if (!ss) ss = getSpreadsheetV2_();
   logAuditActionV2_(ss, {
+    tenant_id: logObj.tenant_id || V2_CONFIG.PILOT_TENANT_ID,
     actor_email: logObj.actor_email || "",
     actor_role: logObj.actor_id || "USER",
     sheet_name: logObj.sheet_name || V2_CONFIG.TAB_DEALS,
@@ -453,18 +574,23 @@ function handleListAuditLogsV2_(params, ss) {
   var limit = parseInt((params && params.limit) || "50", 10);
   var recordIdFilter = ((params && params.record_id) || "").toString().trim();
   var sheetFilter = ((params && params.sheet_name) || "").toString().trim();
+  var tenantFilter = ((params && params.tenant_id) || "").toString().trim();
 
   var items = [];
   var idIdx = headers.indexOf("record_id");
   var sheetIdx = headers.indexOf("sheet_name");
+  var tenantIdx = headers.indexOf("tenant_id");
 
   // Lấy các dòng mới nhất ở cuối sheet
   for (var i = data.length - 1; i >= 1; i--) {
     var row = data[i];
-    if (recordIdFilter && (row[idIdx] || "").toString().indexOf(recordIdFilter) === -1) {
+    if (tenantFilter && tenantIdx !== -1 && (row[tenantIdx] || "").toString().trim() !== tenantFilter) {
       continue;
     }
-    if (sheetFilter && (row[sheetIdx] || "").toString().indexOf(sheetFilter) === -1) {
+    if (recordIdFilter && idIdx !== -1 && (row[idIdx] || "").toString().indexOf(recordIdFilter) === -1) {
+      continue;
+    }
+    if (sheetFilter && sheetIdx !== -1 && (row[sheetIdx] || "").toString().indexOf(sheetFilter) === -1) {
       continue;
     }
 
@@ -571,6 +697,165 @@ function applyNativeGmailProtections_(ss) {
   }
 }
 
+/**
+ * ==============================================================================
+ * CLEAN SLATE RESET SERVICE (DÀNH RIÊNG CHO PLATFORM SUPER ADMIN)
+ * ==============================================================================
+ * Xóa sạch toàn bộ dữ liệu nghiệp vụ để thiết lập lại chuẩn Clean Slate.
+ * Chỉ có Super Admin (coach.chuyen@gmail.com, victorchuyen68@gmail.com) mới có quyền thực thi.
+ * Bắt buộc truyền confirm_code: "RESET-FCS-2026"
+ */
+function handleCleanSlateResetV2_(payload, ss) {
+  if (!ss) ss = getSpreadsheetV2_();
+  if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet." };
+
+  payload = payload || {};
+  var actorEmail = (payload.actor_email || "").toString().trim().toLowerCase();
+  var confirmCode = (payload.confirm_code || payload.confirmation_code || "").toString().trim();
+  var isSuper = payload.is_super_admin === true ||
+                actorEmail === V2_CONFIG.SUPER_ADMIN_EMAIL.toLowerCase() ||
+                actorEmail === "victorchuyen68@gmail.com";
+
+  if (!isSuper) {
+    return {
+      success: false,
+      error: "TỪ CHỐI TRUY CẬP: Chỉ tài khoản PLATFORM_SUPER_ADMIN (" + V2_CONFIG.SUPER_ADMIN_EMAIL + ") mới có quyền xóa sạch dữ liệu hệ thống!"
+    };
+  }
+
+  if (confirmCode !== "RESET-FCS-2026") {
+    return {
+      success: false,
+      error: "MÃ XÁC NHẬN KHÔNG CHÍNH XÁC: Vui lòng nhập đúng 'RESET-FCS-2026' để thực hiện thao tác nguy hiểm này!"
+    };
+  }
+
+  var sheetsToClear = [
+    V2_CONFIG.TAB_WORKERS,          // "01_MASTER_WORKERS"
+    V2_CONFIG.TAB_DEALS,            // "02_CRM_DEALS_2026"
+    V2_CONFIG.TAB_AUDIT_LOG,        // "03_AUDIT_LOG"
+    "04_LEADS_MARKETING",
+    V2_CONFIG.TAB_PIPELINE_EVENTS,  // "05_PIPELINE_EVENTS"
+    "06_INTERVIEWS",
+    "07_ASSIGNMENTS",
+    "08_ATTENDANCE_RAW",
+    "09_ATTENDANCE",
+    "10_MATCHING_REVIEW",
+    "11_ACTION_QUEUE"
+  ];
+
+  var clearedStats = {};
+
+  for (var i = 0; i < sheetsToClear.length; i++) {
+    var tabName = sheetsToClear[i];
+    var sheet = ss.getSheetByName(tabName);
+    if (!sheet) continue;
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow > 1 && lastCol > 0) {
+      // Xóa sạch toàn bộ nội dung từ dòng 2 (bao gồm cả các công thức VLOOKUP lỗi)
+      sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+      clearedStats[tabName] = lastRow - 1;
+    } else {
+      clearedStats[tabName] = 0;
+    }
+  }
+
+  // Tùy chọn: Nếu có yêu cầu nạp 10 mẫu chuẩn
+  var seeded = false;
+  if (payload.seed_clean_sample === true) {
+    seedCleanSampleDataV2_(ss);
+    seeded = true;
+  }
+
+  // Ghi nhận 1 log kiểm toán duy nhất
+  try {
+    var auditSheet = ss.getSheetByName(V2_CONFIG.TAB_AUDIT_LOG);
+    if (auditSheet) {
+      var now = new Date();
+      var dateStr = Utilities.formatDate(now, "GMT+7", "yyyyMMdd");
+      var logId = V2_CONFIG.PREFIX_AUDIT + dateStr + "-000001";
+      auditSheet.appendRow([
+        logId,
+        V2_CONFIG.PILOT_TENANT_ID,
+        now.toISOString(),
+        actorEmail,
+        "PLATFORM_SUPER_ADMIN",
+        "SYSTEM",
+        "ALL_OPERATIONAL_SHEETS",
+        "CLEAN_SLATE_RESET",
+        "status",
+        "PREVIOUS_DATA",
+        seeded ? "SEEDED_10_SAMPLES" : "CLEAN_SLATE_EMPTY",
+        "Thực thi Reset toàn diện bởi Super Admin: " + actorEmail
+      ]);
+    }
+  } catch(e) {}
+
+  // Flush và làm mới cache
+  SpreadsheetApp.flush();
+  CacheHelper_.bumpDataVersion(V2_CONFIG.PILOT_TENANT_ID);
+
+  return {
+    success: true,
+    message: seeded
+      ? "Đã xóa sạch toàn bộ dữ liệu cũ và nạp lại 10 hồ sơ & deal mẫu chuẩn không lỗi!"
+      : "Đã xóa sạch hoàn toàn dữ liệu nghiệp vụ trên 11 bảng! Hệ thống đã ở trạng thái Clean Slate chuẩn 100%.",
+    cleared: clearedStats,
+    seeded: seeded
+  };
+}
+
+/**
+ * Nạp 10 hồ sơ lao động và 10 CRM Deals chuẩn xác thực (Static Values - Zero Broken Formulas)
+ */
+function seedCleanSampleDataV2_(ss) {
+  if (!ss) ss = getSpreadsheetV2_();
+  var nowIso = new Date().toISOString();
+
+  // 1. Nạp 10 Master Workers (34 Cột chuẩn VNeID)
+  var wSheet = ss.getSheetByName(V2_CONFIG.TAB_WORKERS);
+  if (wSheet) {
+    var sampleWorkers = [
+      ["WK-T001","HN-01","Nguyễn Thị Mai Linh","Nữ","2002-05-15","036202051234","2021-06-10","THPT Kim Bảng A","Phổ thông",2020,"Hà Nam","Kinh","Hà Nam","Xã Thi Sơn, Huyện Kim Bảng, Tỉnh Hà Nam","Xã Thi Sơn, Huyện Kim Bảng, Tỉnh Hà Nam","Kinh","Không","Chưa tham gia","O","0912345601","Nguyễn Văn Nam","0987654321","Bố","Nguyễn Văn Nam - 1975 - Làm nông","Trần Thị Hoa - 1978 - Làm nông","Chưa kết hôn","Không có","0912345601","fb.com/mailinh2002","HÀ NAM","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T002","BG-01","Trần Văn Bình","Nam","1998-10-20","074200082001","2019-08-15","THPT Việt Yên 1","Phổ thông",2016,"Bắc Giang","Kinh","Bắc Giang","Xã Tăng Tiến, Huyện Việt Yên, Tỉnh Bắc Giang","Xã Tăng Tiến, Huyện Việt Yên, Tỉnh Bắc Giang","Kinh","Không","Đã xuất ngũ","A","0912345602","Trần Văn Cường","0987654322","Bố","Trần Văn Cường - 1970 - Công nhân","Nguyễn Thị Mai - 1973 - Nông nghiệp","Đã kết hôn","1 con","0912345602","fb.com/binhtran98","BẮC GIANG","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T003","HY-01","Lê Thị Hương","Nữ","2001-03-12","022201031001","2020-04-20","CĐ Nghề Hưng Yên","May mặc",2021,"Hưng Yên","Kinh","Hưng Yên","Xã Dân Tiến, Huyện Khoái Châu, Tỉnh Hưng Yên","Xã Dân Tiến, Huyện Khoái Châu, Tỉnh Hưng Yên","Kinh","Không","Chưa tham gia","B","0912345603","Lê Văn Hùng","0987654323","Bố","Lê Văn Hùng - 1972 - Thợ xây","Phạm Thị Lan - 1975 - Làm may","Chưa kết hôn","Không có","0912345603","fb.com/huongle01","HƯNG YÊN","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T004","HN-02","Phạm Thị Đan Thanh","Nữ","2004-11-28","079198112201","2022-12-05","THPT Phủ Lý A","Phổ thông",2022,"Hà Nam","Kinh","Hà Nam","Phường Minh Khai, TP Phủ Lý, Tỉnh Hà Nam","Phường Minh Khai, TP Phủ Lý, Tỉnh Hà Nam","Kinh","Không","Chưa tham gia","AB","0912345604","Phạm Văn Hải","0987654324","Bố","Phạm Văn Hải - 1976 - Kinh doanh","Đỗ Thị Dung - 1980 - Giáo viên","Chưa kết hôn","Không có","0912345604","fb.com/thanhdan04","HÀ NAM","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T005","BG-02","Nguyễn Văn Hùng","Nam","1999-07-04","036203010501","2020-09-10","CĐ Kỹ thuật Bắc Giang","Hàn điện",2020,"Bắc Giang","Kinh","Bắc Giang","Xã Quang Châu, Huyện Việt Yên, Tỉnh Bắc Giang","Xã Quang Châu, Huyện Việt Yên, Tỉnh Bắc Giang","Kinh","Không","Chưa tham gia","O","0912345605","Nguyễn Văn Tuấn","0987654325","Bố","Nguyễn Văn Tuấn - 1971 - Làm nông","Nguyễn Thị Vân - 1974 - Nông nghiệp","Chưa kết hôn","Không có","0912345605","fb.com/hungnguyen99","BẮC GIANG","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T006","BG-03","Vũ Thị Lan","Nữ","2003-09-18","033201071801","2021-11-12","THPT Hiệp Hòa 2","Phổ thông",2021,"Bắc Giang","Kinh","Bắc Giang","Xã Châu Minh, Huyện Hiệp Hòa, Tỉnh Bắc Giang","Xã Châu Minh, Huyện Hiệp Hòa, Tỉnh Bắc Giang","Kinh","Không","Chưa tham gia","A","0912345606","Vũ Văn Kiên","0987654326","Bố","Vũ Văn Kiên - 1975 - Làm mộc","Lê Thị Nga - 1977 - Nội trợ","Chưa kết hôn","Không có","0912345606","fb.com/lanvu03","BẮC GIANG","Đang làm việc","LUXSHARE",nowIso,nowIso],
+      ["WK-T007","BG-04","Đặng Văn Minh","Nam","1997-12-05","036200041201","2018-05-20","THPT Lục Ngạn 1","Phổ thông",2015,"Bắc Giang","Kinh","Bắc Giang","Thị trấn Chũ, Huyện Lục Ngạn, Tỉnh Bắc Giang","Thị trấn Chũ, Huyện Lục Ngạn, Tỉnh Bắc Giang","Kinh","Không","Đã xuất ngũ","B","0912345607","Đặng Văn Thanh","0987654327","Bố","Đặng Văn Thanh - 1968 - Làm vườn","Trần Thị Lệ - 1972 - Làm nông","Đã kết hôn","2 con","0912345607","fb.com/minhdang97","BẮC GIANG","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T008","QN-01","Hoàng Thị Thu","Nữ","2000-08-22","036202093001","2019-10-05","CĐ Y Dược Quảng Ninh","Dược tá",2021,"Quảng Ninh","Kinh","Quảng Ninh","Phường Bãi Cháy, TP Hạ Long, Tỉnh Quảng Ninh","Phường Bãi Cháy, TP Hạ Long, Tỉnh Quảng Ninh","Kinh","Không","Chưa tham gia","O","0912345608","Hoàng Văn Định","0987654328","Bố","Hoàng Văn Định - 1973 - Thợ mỏ","Nguyễn Thị Xuyến - 1976 - Bán hàng","Chưa kết hôn","Không có","0912345608","fb.com/thuhoang00","QUẢNG NINH","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T009","HP-01","Bùi Văn Tám","Nam","1995-04-16","036199122501","2016-07-15","THPT An Dương","Phổ thông",2013,"Hải Phòng","Kinh","Hải Phòng","Xã An Hưng, Huyện An Dương, TP Hải Phòng","Xã An Hưng, Huyện An Dương, TP Hải Phòng","Kinh","Không","Đã hoàn thành NVQS","A","0912345609","Bùi Văn Chung","0987654329","Bố","Bùi Văn Chung - 1966 - Nghỉ hưu","Phạm Thị Thắm - 1969 - Nội trợ","Đã kết hôn","1 con","0912345609","fb.com/tambui95","HẢI PHÒNG","Đang làm việc","FUYU",nowIso,nowIso],
+      ["WK-T010","BG-05","Ngô Thị Hà","Nữ","2001-01-30","036201060801","2020-03-15","THPT Yên Dũng 1","Phổ thông",2019,"Bắc Giang","Kinh","Bắc Giang","Xã Tiền Phong, Huyện Yên Dũng, Tỉnh Bắc Giang","Xã Tiền Phong, Huyện Yên Dũng, Tỉnh Bắc Giang","Kinh","Không","Chưa tham gia","O","0912345610","Ngô Văn Trọng","0987654330","Bố","Ngô Văn Trọng - 1974 - Thợ cơ khí","Vũ Thị Loan - 1976 - Làm nông","Chưa kết hôn","Không có","0912345610","fb.com/hango01","BẮC GIANG","Đang làm việc","FUYU",nowIso,nowIso]
+    ];
+    for (var w = 0; w < sampleWorkers.length; w++) {
+      wSheet.appendRow(sampleWorkers[w]);
+    }
+  }
+
+  // 2. Nạp 10 CRM Deals (22 Cột - Toàn bộ dữ liệu Tĩnh, Tuyệt đối KHÔNG DÙNG CÔNG THỨC VLOOKUP)
+  var dSheet = ss.getSheetByName(V2_CONFIG.TAB_DEALS);
+  if (dSheet) {
+    var sampleDeals = [
+      ["DL-2026-T001","WK-T001","Nguyễn Thị Mai Linh","0912345601","036202051234","FUYU","HÀ NAM","L3","Sale Nguyễn Hoa","","2026-08-20","Đỗ phỏng vấn","2026-08-22","Đang đi làm",true,"Cố định 2.500.000đ",2500000,"ĐÃ DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T002","WK-T002","Trần Văn Bình","0912345602","074200082001","FUYU","BẮC GIANG","L3","Sale Lê Thảo","","2026-08-18","Đỗ phỏng vấn","2026-08-20","Đang đi làm",true,"Cố định 2.500.000đ",2500000,"ĐÃ DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T003","WK-T003","Lê Thị Hương","0912345603","022201031001","FUYU","HƯNG YÊN","L3","Sale Phạm Châu","CTV Nguyễn Lan","2026-08-22","Đỗ phỏng vấn","2026-08-25","Đang đi làm",true,"Cố định 2.500.000đ",2500000,"ĐÃ DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T004","WK-T004","Phạm Thị Đan Thanh","0912345604","079198112201","FUYU","HÀ NAM","L1.3","Sale Vũ Minh","","","","","Chờ phỏng vấn",false,"Cố định 2.500.000đ",2500000,"CHƯA DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T005","WK-T005","Nguyễn Văn Hùng","0912345605","036203010501","FUYU","BẮC GIANG","L2.1","Sale Nguyễn Hoa","AFF Zalo","2026-09-21","Đỗ phỏng vấn","","Chờ nhận việc",false,"Cố định 2.500.000đ",2500000,"CHƯA DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T006","WK-T006","Vũ Thị Lan","0912345606","033201071801","LUXSHARE","BẮC GIANG","L2.1","Sale Trần Bình","AFF/CTV Hoàng Lan","2026-09-11","Đỗ phỏng vấn","","Chờ nhận việc",false,"Cố định 2.500.000đ",2500000,"CHƯA DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T007","WK-T007","Đặng Văn Minh","0912345607","036200041201","FUYU","BẮC GIANG","L3","Sale Phạm Châu","","2026-08-12","Đỗ phỏng vấn","2026-08-15","Đang đi làm",true,"Cố định 2.500.000đ",2500000,"ĐÃ DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T008","WK-T008","Hoàng Thị Thu","0912345608","036202093001","FUYU","QUẢNG NINH","L3.1","Sale Lê Thảo","","2026-07-28","Đỗ phỏng vấn","2026-08-01","Nghỉ việc tạm thời",false,"Cố định 2.500.000đ",2500000,"TẠM GIỮ","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T009","WK-T009","Bùi Văn Tám","0912345609","036199122501","FUYU","HẢI PHÒNG","L3.2","Sale Vũ Minh","","2026-07-15","Đỗ phỏng vấn","2026-07-20","Chuyển xưởng",false,"Cố định 2.500.000đ",2500000,"CHƯA DUYỆT","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL],
+      ["DL-2026-T010","WK-T010","Ngô Thị Hà","0912345610","036201060801","FUYU","BẮC GIANG","L4","Sale Nguyễn Hoa","AFF Hệ thống","2026-06-18","Đỗ phỏng vấn","2026-06-20","Hoàn thành hợp đồng phí",true,"Cố định 2.500.000đ",2500000,"ĐÃ THANH TOÁN","Hồ sơ mẫu chuẩn xác thực",nowIso,nowIso,V2_CONFIG.SUPER_ADMIN_EMAIL]
+    ];
+    for (var d = 0; d < sampleDeals.length; d++) {
+      dSheet.appendRow(sampleDeals[d]);
+    }
+  }
+}
+
+
 
 // =============================================================================
 // FILE: 04_TaxonomyService.gs
@@ -660,7 +945,7 @@ function setupTaxonomySheets_(ss) {
       ["L1.4", "L1.4. TB, KNM, MB", "CHĂM SÓC", "Sale, Leader Sale"],
       ["L1.5", "L1.5. Thừa tuổi từ 45 tuổi trở lên", "CHĂM SÓC", "Sale, Leader Sale"],
       ["L1.6", "L1.6. Hẹn gọi lại", "CHĂM SÓC", "Sale, Leader Sale"],
-      ["L1.8", "L1.8. Lao động thiếu tuổi", "CHĂM SÓC", "Sale, Leader Sale"],
+      ["L1.7", "L1.7. Lao động thiếu tuổi", "CHĂM SÓC", "Sale, Leader Sale"],
       ["L2", "L2. Lao động hẹn phỏng vấn", "PHỎNG VẤN", "Hiện trường, Sale, Manager"],
       ["L2.1", "L2.1. Lao động đỗ phỏng vấn", "PHỎNG VẤN", "Hiện trường, Sale, Manager"],
       ["L2.2", "L2.2. Lao động trượt phỏng vấn", "PHỎNG VẤN", "Hiện trường, Sale, Manager"],
@@ -675,6 +960,24 @@ function setupTaxonomySheets_(ss) {
 }
 
 function handleGetTaxonomyV2_(ss) {
+  var startTime = Date.now();
+
+  // 1. Kiểm tra CacheService (TTL 6 giờ)
+  var cached = CacheHelper_.getTaxonomy();
+  if (cached && typeof cached === "object") {
+    return {
+      success: true,
+      data: cached,
+      companies: cached.companies,
+      branches: cached.branches,
+      levelSales: cached.levelSales,
+      cache_hit: true,
+      compute_ms: Date.now() - startTime,
+      taxonomy_version: 1
+    };
+  }
+
+  // 2. Cache miss: Đọc từ sheets
   var readSheetRows_ = function(tabName) {
     var s = ss.getSheetByName(tabName);
     if (!s) return [];
@@ -698,12 +1001,18 @@ function handleGetTaxonomyV2_(ss) {
     levelSales: readSheetRows_(V2_CONFIG.TAB_LEVEL_SALE)
   };
 
+  // Lưu vào CacheService (6 giờ)
+  CacheHelper_.putTaxonomy(taxObj);
+
   return {
     success: true,
     data: taxObj,
     companies: taxObj.companies,
     branches: taxObj.branches,
-    levelSales: taxObj.levelSales
+    levelSales: taxObj.levelSales,
+    cache_hit: false,
+    compute_ms: Date.now() - startTime,
+    taxonomy_version: 1
   };
 }
 
@@ -862,6 +1171,9 @@ function handleCreateWorkerV2_(payload, ss) {
       new_value: fullName,
       reason_notes: "Tạo mới hồ sơ Master Worker 34 trường VNeID"
     });
+
+    // Bump version để tự động invalidate cache
+    CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
     var createdWorker = {
       worker_id: newWorkerId,
@@ -1108,6 +1420,8 @@ function handleUpdateWorkerV2_(payload, ss) {
     }
   }
 
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     worker_id: workerId,
@@ -1165,6 +1479,8 @@ function handleSoftDeleteWorkerV2_(payload, ss) {
     new_value: "ĐÃ XÓA (DELETED)",
     reason_notes: reason
   });
+
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,
@@ -1416,6 +1732,9 @@ function handleCreateDealV2_(payload, ss) {
       new_value: dealObj.level_sale_status,
       reason_notes: "Tạo Deal ứng tuyển mới cho " + workerId
     });
+
+    // Bump version để tự động invalidate cache
+    CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
     return {
       success: true,
@@ -1693,6 +2012,9 @@ function handleMoveStageV2_(payload, ss) {
       updated_at: nowIso
     };
 
+    // Bump version để tự động invalidate cache
+    CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
     return {
       success: true,
       data: updatedDeal,
@@ -1844,6 +2166,9 @@ function handleUpdateDealV2_(payload, ss) {
   if (updatedIdx !== -1) sheet.getRange(rowIndex, updatedIdx + 1).setValue(nowIso);
   if (userIdx !== -1) sheet.getRange(rowIndex, userIdx + 1).setValue(payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL);
 
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     deal_id: dealId,
@@ -1884,11 +2209,20 @@ function handleSoftDeleteDealV2_(payload, ss) {
 
   if (rowIndex === -1) return { success: false, error: "Không tìm thấy Deal " + dealId };
 
-  var deleteNote = "[DELETED: " + new Date().toISOString() + " by " + (payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL) + "] Lý do: " + reason;
-  sheet.getRange(rowIndex, stageIdx + 1).setValue("DELETED");
+  var currentRow = data[rowIndex - 1];
+  var currentNotes = (notesIdx !== -1 && currentRow[notesIdx]) ? String(currentRow[notesIdx]) : "";
+  var deleteTag = "[DELETED: " + new Date().toISOString() + " by " + (payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL) + "] Lý do: " + reason;
+  var newNotes = currentNotes ? (deleteTag + " | " + currentNotes) : deleteTag;
+
+  // GIỮ NGUYÊN stageIdx (không đổi level_sale_status để bảo toàn lịch sử chặng)
   if (notesIdx !== -1) {
-    sheet.getRange(rowIndex, notesIdx + 1).setValue(deleteNote);
+    sheet.getRange(rowIndex, notesIdx + 1).setValue(newNotes);
   }
+  // Cập nhật updated_at và updated_by
+  var updatedIdx = headers.indexOf("updated_at");
+  var userIdx = headers.indexOf("updated_by");
+  if (updatedIdx !== -1) sheet.getRange(rowIndex, updatedIdx + 1).setValue(new Date().toISOString());
+  if (userIdx !== -1) sheet.getRange(rowIndex, userIdx + 1).setValue(payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL);
 
   logAuditActionV2_(ss, {
     actor_email: payload.actor_email || V2_CONFIG.SUPER_ADMIN_EMAIL,
@@ -1896,17 +2230,21 @@ function handleSoftDeleteDealV2_(payload, ss) {
     sheet_name: V2_CONFIG.TAB_DEALS,
     record_id: dealId,
     action: "SOFT_DELETE",
-    field_name: "level_sale_status",
-    old_value: oldStage,
-    new_value: "DELETED",
+    field_name: "notes",
+    old_value: currentNotes,
+    new_value: newNotes,
     reason_notes: reason
   });
+
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,
     deal_id: dealId,
-    status: "DELETED",
-    message: "Đã xóa mềm Deal tuyển dụng an toàn."
+    status: oldStage,
+    deleted: true,
+    message: "Đã xóa mềm Deal tuyển dụng an toàn (bảo toàn stage gốc " + oldStage + ")."
   };
 }
 
@@ -1938,6 +2276,7 @@ function handleListDealsV2_(params, ss) {
   var branchIdx = headers.indexOf("branch");
   var compIdx = headers.indexOf("target_company");
   var saleIdx = headers.indexOf("assigned_sale");
+  var notesIdx = headers.indexOf("notes");
 
   var filtered = [];
   for (var i = 1; i < data.length; i++) {
@@ -1945,7 +2284,8 @@ function handleListDealsV2_(params, ss) {
     var stageVal = (row[stageIdx] || "").toString();
 
     // Ẩn Deal bị xóa mềm nếu không yêu cầu
-    if (!includeDeleted && stageVal === "DELETED") {
+    var isDeleted = (stageVal === "DELETED") || (notesIdx !== -1 && String(row[notesIdx] || "").indexOf("[DELETED:") !== -1);
+    if (!includeDeleted && isDeleted) {
       continue;
     }
 
@@ -2189,24 +2529,126 @@ function handleSeedRealDataV2_(ss) {
  * ==============================================================================
  * FCS AI WORKFORCE OS V2 — MODULE 9: DASHBOARD KPI SERVICE
  * Chức năng: Báo cáo số liệu thời gian thực cho Executive Dashboard & Analytics
- * 1. Tổng số Master Worker & Active Deals
- * 2. Phân bổ theo 19 Level Sale (C3 -> L4)
- * 3. Thước đo North Star: VWW (Verified Working Workers)
- * 4. Phân bổ theo 8 Chi nhánh & 29 Nhà máy đối tác
- * 5. Tỷ lệ chuyển đổi phễu tuyển dụng (Conversion Funnel)
+ * Tuân thủ Guardrails V2.1:
+ * - Versioned + Tenant-Scoped Cache (CacheService)
+ * - Materialized Snapshot Read Model (Tab 00_DASHBOARD_KPI Bounded Ranges)
+ * - Fallback Canonical Scanning nếu chưa có snapshot
+ * - Performance & Audit Instrumentation (rows_read, compute_ms, cache_hit, data_version)
  * ==============================================================================
  */
 
-function handleGetDashboardStatsV2_(ss) {
+function handleGetDashboardStatsV2_(ss, tenantId) {
+  var startTime = Date.now();
+  tenantId = tenantId || V2_CONFIG.PILOT_TENANT_ID;
+
+  // 1. Kiểm tra Versioned Tenant Cache trước
+  var cached = CacheHelper_.get(tenantId, "dashboard");
+  if (cached && typeof cached === "object") {
+    cached.cache_hit = true;
+    cached.latency_ms = Date.now() - startTime;
+    return cached;
+  }
+
+  // 2. Thử đọc từ Tab Snapshot KPI Bounded Native (Tối ưu cực nhanh: chỉ đọc 15 ô thay vì scan cả bảng)
+  var kpiSheet = ss.getSheetByName(V2_CONFIG.TAB_DASHBOARD_KPI);
+  if (kpiSheet && kpiSheet.getLastRow() >= 15) {
+    try {
+      var kpiVals = kpiSheet.getRange(2, 1, 14, 2).getValues();
+      var kpiMap = {};
+      for (var r = 0; r < kpiVals.length; r++) {
+        var k = String(kpiVals[r][0] || "").trim();
+        var v = kpiVals[r][1];
+        kpiMap[k] = v;
+      }
+
+      var totalWorkers = Math.max(0, (Number(kpiMap["total_workers"]) || 0) - (Number(kpiMap["workers_deleted"]) || 0));
+      var workersDeleted = Number(kpiMap["workers_deleted"]) || 0;
+      var workersNam = Number(kpiMap["workers_nam"]) || 0;
+      var workersNu = Number(kpiMap["workers_nu"]) || 0;
+
+      var totalDeals = Math.max(0, (Number(kpiMap["total_deals"]) || 0) - (Number(kpiMap["deals_deleted"]) || 0));
+      var dealsDeleted = Number(kpiMap["deals_deleted"]) || 0;
+      var totalVww = Number(kpiMap["total_vww"]) || 0;
+
+      var stageC3 = Number(kpiMap["stage_c3"]) || 0;
+      var stageL1 = Number(kpiMap["stage_l1"]) || 0;
+      var stageL2 = Number(kpiMap["stage_l2"]) || 0;
+      var stageL3 = Number(kpiMap["stage_l3"]) || 0;
+      var stageL4 = Number(kpiMap["stage_l4"]) || 0;
+
+      var convC3toL2 = totalDeals > 0 ? Math.round((stageL2 + stageL3 + stageL4) / totalDeals * 100) : 0;
+      var convL2toL3 = (stageL2 + stageL3 + stageL4) > 0 ? Math.round((stageL3 + stageL4) / (stageL2 + stageL3 + stageL4) * 100) : 0;
+      var convL3toVww = (stageL3 + stageL4) > 0 ? Math.round(totalVww / (stageL3 + stageL4) * 100) : 0;
+
+      var metricsFast = {
+        total_workers: totalWorkers,
+        totalWorkers: totalWorkers,
+        workers_deleted: workersDeleted,
+        workersDeleted: workersDeleted,
+        workers_by_gender: { Nam: workersNam, "Nữ": workersNu },
+        workersByGender: { Nam: workersNam, "Nữ": workersNu },
+        total_deals: totalDeals,
+        totalDeals: totalDeals,
+        deals_deleted: dealsDeleted,
+        dealsDeleted: dealsDeleted,
+        north_star_vww: totalVww,
+        northStarVww: totalVww,
+        totalVww: totalVww,
+        funnel_groups: {
+          stage_c3_new_leads: stageC3,
+          stage_l1_consulting: stageL1,
+          stage_l2_interviewing: stageL2,
+          stage_l3_working: stageL3,
+          stage_l4_commission_vww: stageL4
+        },
+        conversion_rates: {
+          c3_to_interview_percent: convC3toL2,
+          interview_to_work_percent: convL2toL3,
+          work_to_vww_percent: convL3toVww
+        },
+        stage_breakdown: {
+          C3: stageC3,
+          L1: stageL1,
+          L2: stageL2,
+          L3: stageL3,
+          L4: stageL4
+        },
+        branch_distribution: {},
+        company_distribution: {}
+      };
+
+      var fastResult = {
+        success: true,
+        data: metricsFast,
+        metrics: metricsFast,
+        data_source: "MATERIALIZED_SNAPSHOT_KPI",
+        rows_read: 14,
+        cache_hit: false,
+        data_version: CacheHelper_.getDataVersion(tenantId),
+        compute_ms: Date.now() - startTime,
+        timestamp: new Date().toISOString()
+      };
+
+      // Lưu cache 60s
+      CacheHelper_.put(tenantId, "dashboard", fastResult, 60);
+      return fastResult;
+    } catch(kpiErr) {
+      Logger.log("Lỗi đọc từ tab KPI snapshot, tự động chuyển sang fallback scan: " + kpiErr.message);
+    }
+  }
+
+  // 3. FALLBACK CANONICAL SCAN: Quét trực tiếp nếu chưa có tab Snapshot
   var workerSheet = ss.getSheetByName(V2_CONFIG.TAB_WORKERS);
   var dealSheet = ss.getSheetByName(V2_CONFIG.TAB_DEALS);
 
   var totalWorkers = 0;
   var workersDeleted = 0;
   var workersByGender = { Nam: 0, "Nữ": 0 };
+  var rowsReadCount = 0;
 
   if (workerSheet) {
     var wData = workerSheet.getDataRange().getValues();
+    rowsReadCount += wData.length;
     var wHeaders = wData[0] || [];
     var wGenderIdx = wHeaders.indexOf("gender");
     var wStatusIdx = wHeaders.indexOf("working_status");
@@ -2230,7 +2672,7 @@ function handleGetDashboardStatsV2_(ss) {
   var totalVww = 0;
   var stageCounts = {
     C3: 0, "C3.1": 0, "C3.2": 0,
-    L1: 0, "L1.1": 0, "L1.2": 0, "L1.3": 0, "L1.4": 0, "L1.5": 0, "L1.6": 0, "L1.8": 0,
+    L1: 0, "L1.1": 0, "L1.2": 0, "L1.3": 0, "L1.4": 0, "L1.5": 0, "L1.6": 0, "L1.7": 0,
     L2: 0, "L2.1": 0, "L2.2": 0, "L2.3": 0,
     L3: 0, "L3.1": 0, "L3.2": 0,
     L4: 0
@@ -2240,6 +2682,7 @@ function handleGetDashboardStatsV2_(ss) {
 
   if (dealSheet) {
     var dData = dealSheet.getDataRange().getValues();
+    rowsReadCount += dData.length;
     var dHeaders = dData[0] || [];
     var dStageIdx = dHeaders.indexOf("level_sale_status");
     var dBranchIdx = dHeaders.indexOf("branch");
@@ -2262,30 +2705,25 @@ function handleGetDashboardStatsV2_(ss) {
         stageCounts[stage] = 1;
       }
 
-      // Đếm VWW (Verified Working Worker)
       var isVww = dRow[dVwwIdx] === true || dRow[dVwwIdx] === "TRUE" || stage === "L4";
       if (isVww) totalVww++;
 
-      // Đếm theo chi nhánh
       var b = (dRow[dBranchIdx] || "CHƯA PHÂN BỔ").toString().trim().toUpperCase();
       branchCounts[b] = (branchCounts[b] || 0) + 1;
 
-      // Đếm theo công ty đối tác
       var c = (dRow[dCompIdx] || "CHƯA PHÂN BỔ").toString().trim().toUpperCase();
       companyCounts[c] = (companyCounts[c] || 0) + 1;
     }
   }
 
-  // Nhóm theo các chặng lớn của phễu
   var groupC3 = (stageCounts["C3"] || 0) + (stageCounts["C3.1"] || 0) + (stageCounts["C3.2"] || 0);
   var groupL1 = (stageCounts["L1"] || 0) + (stageCounts["L1.1"] || 0) + (stageCounts["L1.2"] || 0) +
                 (stageCounts["L1.3"] || 0) + (stageCounts["L1.4"] || 0) + (stageCounts["L1.5"] || 0) +
-                (stageCounts["L1.6"] || 0) + (stageCounts["L1.8"] || 0);
+                (stageCounts["L1.6"] || 0) + (stageCounts["L1.7"] || 0);
   var groupL2 = (stageCounts["L2"] || 0) + (stageCounts["L2.1"] || 0) + (stageCounts["L2.2"] || 0) + (stageCounts["L2.3"] || 0);
   var groupL3 = (stageCounts["L3"] || 0) + (stageCounts["L3.1"] || 0) + (stageCounts["L3.2"] || 0);
   var groupL4 = (stageCounts["L4"] || 0);
 
-  // Tỷ lệ chuyển đổi phễu
   var convC3toL2 = totalDeals > 0 ? Math.round((groupL2 + groupL3 + groupL4) / totalDeals * 100) : 0;
   var convL2toL3 = (groupL2 + groupL3 + groupL4) > 0 ? Math.round((groupL3 + groupL4) / (groupL2 + groupL3 + groupL4) * 100) : 0;
   var convL3toVww = (groupL3 + groupL4) > 0 ? Math.round(totalVww / (groupL3 + groupL4) * 100) : 0;
@@ -2321,12 +2759,21 @@ function handleGetDashboardStatsV2_(ss) {
     company_distribution: companyCounts
   };
 
-  return {
+  var result = {
     success: true,
     data: metricsObj,
-    timestamp: new Date().toISOString(),
-    metrics: metricsObj
+    metrics: metricsObj,
+    data_source: "CANONICAL_SCAN_FALLBACK",
+    rows_read: rowsReadCount,
+    cache_hit: false,
+    data_version: CacheHelper_.getDataVersion(tenantId),
+    compute_ms: Date.now() - startTime,
+    timestamp: new Date().toISOString()
   };
+
+  // Lưu cache 60s
+  CacheHelper_.put(tenantId, "dashboard", result, 60);
+  return result;
 }
 
 
@@ -2399,9 +2846,12 @@ function handleBatchImportWorkersV2_(payload, ss) {
   var dDealIdIdx = dHeaders.indexOf("deal_id");
 
   var workerRecentDealMap = {};
+  var worker24hCompanyDealMap = {};
   var currentYear = new Date().getFullYear();
   var maxDealNum = 0;
   var thirtyDaysAgo = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+  var oneDayAgo = new Date().getTime() - 24 * 60 * 60 * 1000;
+  var dCompIdx = dHeaders.indexOf("target_company");
 
   for (var j = 1; j < dData.length; j++) {
     var dRow = dData[j];
@@ -2412,6 +2862,10 @@ function handleBatchImportWorkersV2_(payload, ss) {
 
     if (dWid && dTime > thirtyDaysAgo) {
       workerRecentDealMap[dWid] = true;
+    }
+    if (dWid && dTime > oneDayAgo) {
+      var dComp = (dCompIdx !== -1 && dRow[dCompIdx] ? dRow[dCompIdx] : "").toString().trim().toUpperCase();
+      worker24hCompanyDealMap[dWid + "_" + dComp] = true;
     }
 
     var didMatch = did.match(/DL-\d{4}-(\d+)/);
@@ -2433,7 +2887,8 @@ function handleBatchImportWorkersV2_(payload, ss) {
     deals_created: 0,
     valid_c3_count: 0,
     duplicate_c3_1_count: 0,
-    invalid_c3_2_count: 0
+    invalid_c3_2_count: 0,
+    skipped_count: 0
   };
 
   var dealRowStart = dealSheet.getLastRow() + 1;
@@ -2504,6 +2959,13 @@ function handleBatchImportWorkersV2_(payload, ss) {
       stats.new_workers_created++;
     }
 
+    // Idempotency: Kiểm tra nếu Worker đã có Deal trong vòng 24 giờ cho cùng 1 nhà máy mục tiêu
+    var compKey = (targetComp || defaultCompany).toString().trim().toUpperCase();
+    if (existingWorkerId && worker24hCompanyDealMap[existingWorkerId + "_" + compKey]) {
+      stats.skipped_count++;
+      continue; // Tuyệt đối không tạo Deal trùng lặp (Idempotency)
+    }
+
     // Kiểm tra trùng lặp Deal trong 30 ngày
     if (targetStage !== "C3.2") {
       if (workerRecentDealMap[workerId]) {
@@ -2542,6 +3004,7 @@ function handleBatchImportWorkersV2_(payload, ss) {
 
     newDealRows.push(dealRow);
     stats.deals_created++;
+    worker24hCompanyDealMap[workerId + "_" + compKey] = true;
   }
 
   // 4. Batch write vào Sheet
@@ -2567,6 +3030,9 @@ function handleBatchImportWorkersV2_(payload, ss) {
     to_stage: "C3",
     metadata: stats
   }, ss);
+
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,
@@ -2811,6 +3277,9 @@ function handleCheckInInterviewV2_(payload, ss) {
     }
   }, ss);
 
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     message: "Điểm danh phỏng vấn thành công: " + interviewResultLabel,
@@ -3002,24 +3471,24 @@ function handleMatchAttendanceAndVerifyVwwV2_(payload, ss) {
     }
 
     // Kiểm tra điều kiện VWW (Số ngày công >= threshold)
+    var rowIndexInArray = selectedDeal.rowNumber - 1; // 0-indexed trong mảng RAM dData
+
     if (workdays >= defaultThreshold) {
-      var rowToUpdate = selectedDeal.rowNumber;
-
-      // Cập nhật Deal sang L4 và đóng dấu is_vww = TRUE
-      dealSheet.getRange(rowToUpdate, dStageIdx + 1).setValue("L4");
-      dealSheet.getRange(rowToUpdate, dVwwIdx + 1).setValue(true);
-      dealSheet.getRange(rowToUpdate, dWorkStatusIdx + 1).setValue("Đã hết thời gian phí");
-
       var vwwNote = "[VWW XÁC MINH] Đạt " + workdays + " công (Ngưỡng: " + defaultThreshold + " công) tại " + (companyCode || "xưởng") + " tháng " + defaultMonth;
       if (factoryWorkerId) vwwNote += " | Mã thẻ: " + factoryWorkerId;
       var newNotes = selectedDeal.notes ? (selectedDeal.notes + " | " + vwwNote) : vwwNote;
 
-      dealSheet.getRange(rowToUpdate, dNotesIdx + 1).setValue(newNotes);
-      dealSheet.getRange(rowToUpdate, dUpdatedIdx + 1).setValue(nowIso);
-      dealSheet.getRange(rowToUpdate, dUserIdx + 1).setValue(actorEmail);
+      // Cập nhật trực tiếp trên RAM - Tốc độ O(1)
+      dData[rowIndexInArray][dStageIdx] = "L3"; // Giữ L3 (Đang đi làm) theo chuẩn North Star VWW
+      dData[rowIndexInArray][dVwwIdx] = true;
+      dData[rowIndexInArray][dWorkStatusIdx] = "Đang đi làm (Đạt chuẩn VWW)";
+      dData[rowIndexInArray][dNotesIdx] = newNotes;
+      dData[rowIndexInArray][dUpdatedIdx] = nowIso;
+      dData[rowIndexInArray][dUserIdx] = actorEmail;
 
+      hasChanges = true;
       selectedDeal.is_vww = true;
-      selectedDeal.stage = "L4";
+      selectedDeal.stage = "L3";
       stats.vww_newly_verified++;
 
       verifiedDealsList.push({
@@ -3038,7 +3507,7 @@ function handleMatchAttendanceAndVerifyVwwV2_(payload, ss) {
         actor_email: actorEmail,
         action: "VWW_VERIFIED_SUCCESS",
         from_stage: selectedDeal.stage,
-        to_stage: "L4",
+        to_stage: "L3",
         metadata: {
           workdays: workdays,
           threshold: defaultThreshold,
@@ -3050,15 +3519,22 @@ function handleMatchAttendanceAndVerifyVwwV2_(payload, ss) {
     } else {
       // Dưới ngưỡng công (Lao động nghỉ ngang hoặc chưa đủ ngày)
       stats.below_threshold_count++;
-      var rowIdx = selectedDeal.rowNumber;
       var subNote = "[CHƯA ĐẠT VWW] Chấm công ghi nhận: " + workdays + "/" + defaultThreshold + " công tháng " + defaultMonth;
       var currentN = selectedDeal.notes ? (selectedDeal.notes + " | " + subNote) : subNote;
-      dealSheet.getRange(rowIdx, dNotesIdx + 1).setValue(currentN);
-      dealSheet.getRange(rowIdx, dUpdatedIdx + 1).setValue(nowIso);
+      dData[rowIndexInArray][dNotesIdx] = currentN;
+      dData[rowIndexInArray][dUpdatedIdx] = nowIso;
+      hasChanges = true;
     }
   }
 
-  SpreadsheetApp.flush();
+  // GHI NGƯỢC LẠI TOÀN BỘ SHEET BẰNG ĐÚNG 1 LỆNH DUY NHẤT NGOÀI VÒNG LẶP
+  if (hasChanges) {
+    fullDealRange.setValues(dData);
+    SpreadsheetApp.flush();
+  }
+
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,
@@ -3290,6 +3766,9 @@ function handleApproveCommissionV2_(payload, ss) {
   }
 
   SpreadsheetApp.flush();
+
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
 
   return {
     success: true,
@@ -3561,6 +4040,9 @@ function handleCaptureLeadV2_(payload, ss) {
     );
   } catch(e) {}
 
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     data: {
@@ -3678,37 +4160,28 @@ function onEdit(e) {
       return;
     }
 
-    // 3. Tự động ghi nhận Audit Log cho thao tác sửa ô trên sheet nghiệp vụ
+    // 3. Tự động cập nhật cột updated_at & updated_by trên dòng được chỉnh sửa
     if (sheetName === V2_CONFIG.TAB_WORKERS || sheetName === V2_CONFIG.TAB_DEALS) {
-      var userEmail = Session.getActiveUser().getEmail() || "sheet_user@fcs.vn";
-      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      var fieldName = headers[col - 1] || ("COL_" + col);
-      var recordId = (sheet.getRange(row, 1).getValue() || "").toString();
-      var oldVal = e.oldValue !== undefined ? e.oldValue : "";
-      var newVal = e.value !== undefined ? e.value : range.getValue();
+      var lastCol = sheet.getLastColumn();
+      if (lastCol > 0) {
+        var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        var updatedIdx = headers.indexOf("updated_at");
+        var userIdx = headers.indexOf("updated_by");
+        var userEmail = Session.getActiveUser().getEmail() || "sheet_editor@fcs.vn";
+        var nowIso = new Date().toISOString();
 
-      var ss = sheet.getParent();
-      logAuditActionV2_(ss, {
-        actor_email: userEmail,
-        actor_role: "SHEET_EDITOR",
-        sheet_name: sheetName,
-        record_id: recordId,
-        action: "UPDATE",
-        field_name: fieldName,
-        old_value: oldVal,
-        new_value: newVal,
-        reason_notes: "Chỉnh sửa trực tiếp ô " + range.getA1Notation() + " trên Google Sheet"
-      });
+        // Tránh loop nếu chính cột updated_at/by được sửa
+        if (updatedIdx !== -1 && col !== (updatedIdx + 1)) {
+          sheet.getRange(row, updatedIdx + 1).setValue(nowIso);
+        }
+        if (userIdx !== -1 && col !== (userIdx + 1)) {
+          sheet.getRange(row, userIdx + 1).setValue(userEmail);
+        }
 
-      // 4. Tự động cập nhật cột updated_at & updated_by nếu sheet có cột này (CRM Deals)
-      var updatedIdx = headers.indexOf("updated_at");
-      var userIdx = headers.indexOf("updated_by");
-      var nowIso = new Date().toISOString();
-      if (updatedIdx !== -1) {
-        sheet.getRange(row, updatedIdx + 1).setValue(nowIso);
-      }
-      if (userIdx !== -1) {
-        sheet.getRange(row, userIdx + 1).setValue(userEmail);
+        // Đánh dấu bump version để cache được làm mới nhẹ nhàng
+        try {
+          CacheHelper_.bumpDataVersion(V2_CONFIG.PILOT_TENANT_ID);
+        } catch(cErr) {}
       }
     }
   } catch (err) {
@@ -3737,6 +4210,8 @@ function doPost(e) {
 }
 
 function handleRequestV2_(e, method) {
+  var requestStartTime = Date.now();
+  var requestId = "req_" + Utilities.getUuid().substring(0, 8);
   try {
     var ss = getSpreadsheetV2_();
     var params = (e && e.parameter) || {};
@@ -3787,8 +4262,18 @@ function handleRequestV2_(e, method) {
         };
         break;
 
+      case "v2.bootstrap":
+      case "system.bootstrap":
+        result = handleBootstrapV2_(mergedParams, ss);
+        break;
+
       case "v2.system.setup":
         result = setupV2Platform(ss);
+        break;
+
+      case "v2.system.reset":
+      case "system.reset":
+        result = handleCleanSlateResetV2_(requestPayload, ss);
         break;
 
       // --- WORKER ENDPOINTS ---
@@ -3906,21 +4391,37 @@ function handleRequestV2_(e, method) {
         result = handleListLeadsV2_(mergedParams, ss);
         break;
 
+      // --- DEV SUPPORT & HANDOVER COPILOT ENDPOINT ---
+      case "v2.devsupport.log":
+      case "devsupport.log":
+        result = handleDevSupportLogV2_(requestPayload, ss);
+        break;
+
       default:
         result = {
           success: false,
           error: "Endpoint V2 không được hỗ trợ: " + action,
           availableActions: [
-            "v2.health", "v2.system.setup",
+            "v2.health", "v2.bootstrap", "v2.system.setup", "v2.system.reset",
             "v2.workers.list", "v2.worker.get", "v2.worker.create", "v2.worker.update", "v2.worker.soft_delete",
             "v2.deals.list", "v2.deal.create", "v2.deal.move_stage", "v2.deal.update", "v2.deal.soft_delete",
             "v2.taxonomy.get", "v2.audit.list", "v2.dashboard.stats", "v2.pipeline.events",
             "v2.batch.import", "v2.dispatch.roster", "v2.dispatch.checkin",
             "v2.attendance.match", "v2.settlement.report", "v2.settlement.approve",
-            "v2.lead.capture", "v2.leads.list"
+            "v2.lead.capture", "v2.leads.list", "v2.devsupport.log"
           ]
         };
         break;
+    }
+
+    var totalMs = Date.now() - requestStartTime;
+    if (result && typeof result === "object") {
+      result.request_id = requestId;
+      result.total_ms = totalMs;
+      var currentTenant = (requestPayload && (requestPayload.tenantId || requestPayload.requestedTenantId)) || (params && params.tenantId) || V2_CONFIG.PILOT_TENANT_ID;
+      if (result.data_version === undefined) {
+        result.data_version = CacheHelper_.getDataVersion(currentTenant);
+      }
     }
 
     return createJsonResponseV2_(result);
@@ -3931,6 +4432,75 @@ function handleRequestV2_(e, method) {
       stack: error.stack
     });
   }
+}
+
+/**
+ * Minimal Bootstrap API (Tuân thủ Guardrails V2.1 Task B)
+ * Response siêu nhẹ, trả session, tenant, permissions, summary KPI snapshot và dataVersion
+ * Tuyệt đối KHÔNG trả full workers, full deals, attendance records hay Worker 360
+ */
+function handleBootstrapV2_(params, ss) {
+  var startTime = Date.now();
+  var tenantId = (params && (params.tenant_id || params.tenantId)) || V2_CONFIG.PILOT_TENANT_ID;
+  var userEmail = (params && (params.actor_email || params.email)) || V2_CONFIG.SUPER_ADMIN_EMAIL;
+  var userRole = (params && (params.actor_role || params.role)) || "SUPER_ADMIN";
+
+  // 1. Kiểm tra CacheService (TTL 60s)
+  var cached = CacheHelper_.get(tenantId, "bootstrap");
+  if (cached && typeof cached === "object") {
+    cached.cache_hit = true;
+    cached.latency_ms = Date.now() - startTime;
+    return cached;
+  }
+
+  // 2. Lấy summary số liệu từ Dashboard KPI
+  var statsResult = handleGetDashboardStatsV2_(ss, tenantId);
+  var stats = (statsResult && statsResult.metrics) || (statsResult && statsResult.data) || {};
+
+  var dataVersion = CacheHelper_.getDataVersion(tenantId);
+
+  var bootstrapPayload = {
+    session: {
+      user_email: userEmail,
+      role: userRole,
+      tenant_id: tenantId,
+      system_name: V2_CONFIG.SYSTEM_NAME
+    },
+    tenant: {
+      tenant_id: tenantId,
+      name: V2_CONFIG.SYSTEM_NAME,
+      status: "ACTIVE"
+    },
+    permissions: {
+      role: userRole,
+      can_edit: true,
+      can_delete: userRole === "SUPER_ADMIN" || userRole === "ADMIN",
+      can_approve: true
+    },
+    summary: {
+      total_workers: stats.total_workers || stats.totalWorkers || 0,
+      total_deals: stats.total_deals || stats.totalDeals || 0,
+      total_vww: stats.north_star_vww || stats.northStarVww || stats.totalVww || 0,
+      conversion_rates: stats.conversion_rates || {},
+      funnel_groups: stats.funnel_groups || {}
+    },
+    taxonomyVersion: 1,
+    dataVersion: dataVersion,
+    serverTime: new Date().toISOString()
+  };
+
+  var res = {
+    success: true,
+    data: bootstrapPayload,
+    tenant_id: tenantId,
+    data_version: dataVersion,
+    cache_hit: false,
+    compute_ms: Date.now() - startTime
+  };
+
+  // Cache 60 giây
+  CacheHelper_.put(tenantId, "bootstrap", res, 60);
+  return res;
 }
 
 function createJsonResponseV2_(result) {
@@ -3966,6 +4536,7 @@ function setupV2Platform(ss) {
   if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet." };
 
   renameSheetsToOption1_(ss);
+  setupDashboardKpiSheet_(ss);
   setupTaxonomySheets_(ss);
   setupMasterWorkersSheet_(ss);
   setupCrmDealsSheet_(ss);
@@ -3985,6 +4556,67 @@ function setupV2Platform(ss) {
  */
 function setupV2NativeSheets() {
   return setupV2Platform();
+}
+
+/**
+ * ==============================================================================
+ * DEV SUPPORT & HANDOVER COPILOT LOGGING SERVICE (TSK-11)
+ * ==============================================================================
+ * Ghi thực sự phản hồi, mục tiêu và yêu cầu kỹ thuật vào tab:
+ * "IN ( Data - Mục Tiêu -KQ đầu ra là gì )"
+ */
+function handleDevSupportLogV2_(payload, ss) {
+  if (!ss) ss = getSpreadsheetV2_();
+  if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet." };
+
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+  } catch(e) {
+    return { success: false, error: "Hệ thống bận, không lấy được lock ghi sheet." };
+  }
+
+  try {
+    var tabName = "IN ( Data - Mục Tiêu -KQ đầu ra là gì )";
+    var sheet = ss.getSheetByName(tabName);
+    if (!sheet) {
+      sheet = ss.insertSheet(tabName);
+      sheet.appendRow([
+        "Mã Ticket", "Thời Gian", "Người Gửi", "Vai Trò", "Phân Loại",
+        "Mục Tiêu / Vấn Đề", "Kết Quả Đầu Ra Mong Muốn", "Nội Dung Chi Tiết",
+        "Mức Ưu Tiên", "Giai Đoạn", "Trạng Thái", "Hành Động AI / Dev"
+      ]);
+      formatHeaderRow_(sheet, 12, "#1E3A8A");
+    }
+
+    var ticket = (payload && payload.ticket) || payload || {};
+    var row = [
+      ticket.id || ("DEV-" + Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd-HHmmss")),
+      ticket.timestamp || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
+      ticket.senderName || ticket.userName || "Unknown",
+      ticket.senderRole || ticket.userRole || "GUEST",
+      ticket.category || "BÁO LỖI (BUG)",
+      ticket.goal || ticket.title || "",
+      ticket.expectedOutput || "",
+      ticket.content || ticket.description || "",
+      ticket.priority || "P1 - NGHIÊM TRỌNG",
+      ticket.stage || "GĐ1",
+      ticket.status || "CHỜ XỬ LÝ",
+      ticket.aiAction || "Đã ghi nhận vào hệ thống"
+    ];
+
+    sheet.appendRow(row);
+    return {
+      success: true,
+      ticketId: row[0],
+      message: "Đã ghi thành công 1 hàng vào Google Sheet tab: " + tabName,
+      data: { ticketId: row[0], row: row }
+    };
+  } catch(err) {
+    return { success: false, error: "Lỗi ghi Google Sheet: " + err.message };
+  } finally {
+    try { lock.releaseLock(); } catch(ex) {}
+  }
 }
 
 

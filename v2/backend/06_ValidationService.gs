@@ -63,7 +63,7 @@ function validateWorkerPayloadOrReject_(payload) {
         return { isValid: false, error: "Năm sinh không hợp lệ (tuổi từ 15 đến 75)." };
       }
       if (age < 18) {
-        warnings.push("L1.8: Lao động thiếu tuổi (" + age + " tuổi < 18).");
+        warnings.push("L1.7: Lao động thiếu tuổi (" + age + " tuổi < 18).");
       } else if (age >= 45) {
         warnings.push("L1.5: Lao động thừa tuổi (" + age + " tuổi ≥ 45).");
       }
@@ -93,13 +93,13 @@ function normalizeStageCode_(stageInput) {
   var s = stageInput.toString().trim();
 
   var validStages = [
-    "C3", "C3.1", "C3.2", "L1", "L1.1", "L1.2", "L1.3", "L1.4", "L1.5", "L1.6", "L1.8",
+    "C3", "C3.1", "C3.2", "L1", "L1.1", "L1.2", "L1.3", "L1.4", "L1.5", "L1.6", "L1.7",
     "L2", "L2.1", "L2.2", "L2.3", "L3", "L3.1", "L3.2", "L4"
   ];
   if (validStages.indexOf(s) !== -1) return s;
 
   // Hỗ trợ nhận diện cả tên đầy đủ hoặc tiền tố, ví dụ: "C3. Lao động mới", "L2.1. Lao động đỗ phỏng vấn"
-  var match = s.match(/^(C3\.[12]|C3|L1\.[1234568]|L1|L2\.[123]|L2|L3\.[12]|L3|L4)/i);
+  var match = s.match(/^(C3\.[12]|C3|L1\.[1234567]|L1|L2\.[123]|L2|L3\.[12]|L3|L4)/i);
   if (match) {
     var code = match[1].toUpperCase();
     if (validStages.indexOf(code) !== -1) return code;

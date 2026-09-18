@@ -13,7 +13,7 @@ export type LevelSaleCode =
   | 'L1.4'
   | 'L1.5'
   | 'L1.6'
-  | 'L1.8'
+  | 'L1.7'
   | 'L2'
   | 'L2.1'
   | 'L2.2'
@@ -26,7 +26,7 @@ export type LevelSaleCode =
 
 export type LevelSaleGroup =
   | 'LEAD_INTAKE'     // Tiếp nhận lead (C3, C3.1, C3.2)
-  | 'SALE_NURTURE'    // Chăm sóc & Phân bổ sale (L1, L1.1 -> L1.8)
+  | 'SALE_NURTURE'    // Chăm sóc & Phân bổ sale (L1, L1.1 -> L1.7)
   | 'INTERVIEW'       // Phỏng vấn xưởng (L2, L2.1, L2.2, L2.3)
   | 'EMPLOYMENT'      // Đi làm & VWW (L3, L3.1, L3.2)
   | 'SETTLEMENT';     // Nghiệm thu hoa hồng (L4)

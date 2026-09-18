@@ -82,7 +82,7 @@ function setupTaxonomySheets_(ss) {
       ["L1.4", "L1.4. TB, KNM, MB", "CHĂM SÓC", "Sale, Leader Sale"],
       ["L1.5", "L1.5. Thừa tuổi từ 45 tuổi trở lên", "CHĂM SÓC", "Sale, Leader Sale"],
       ["L1.6", "L1.6. Hẹn gọi lại", "CHĂM SÓC", "Sale, Leader Sale"],
-      ["L1.8", "L1.8. Lao động thiếu tuổi", "CHĂM SÓC", "Sale, Leader Sale"],
+      ["L1.7", "L1.7. Lao động thiếu tuổi", "CHĂM SÓC", "Sale, Leader Sale"],
       ["L2", "L2. Lao động hẹn phỏng vấn", "PHỎNG VẤN", "Hiện trường, Sale, Manager"],
       ["L2.1", "L2.1. Lao động đỗ phỏng vấn", "PHỎNG VẤN", "Hiện trường, Sale, Manager"],
       ["L2.2", "L2.2. Lao động trượt phỏng vấn", "PHỎNG VẤN", "Hiện trường, Sale, Manager"],
@@ -97,6 +97,24 @@ function setupTaxonomySheets_(ss) {
 }
 
 function handleGetTaxonomyV2_(ss) {
+  var startTime = Date.now();
+
+  // 1. Kiểm tra CacheService (TTL 6 giờ)
+  var cached = CacheHelper_.getTaxonomy();
+  if (cached && typeof cached === "object") {
+    return {
+      success: true,
+      data: cached,
+      companies: cached.companies,
+      branches: cached.branches,
+      levelSales: cached.levelSales,
+      cache_hit: true,
+      compute_ms: Date.now() - startTime,
+      taxonomy_version: 1
+    };
+  }
+
+  // 2. Cache miss: Đọc từ sheets
   var readSheetRows_ = function(tabName) {
     var s = ss.getSheetByName(tabName);
     if (!s) return [];
@@ -120,11 +138,17 @@ function handleGetTaxonomyV2_(ss) {
     levelSales: readSheetRows_(V2_CONFIG.TAB_LEVEL_SALE)
   };
 
+  // Lưu vào CacheService (6 giờ)
+  CacheHelper_.putTaxonomy(taxObj);
+
   return {
     success: true,
     data: taxObj,
     companies: taxObj.companies,
     branches: taxObj.branches,
-    levelSales: taxObj.levelSales
+    levelSales: taxObj.levelSales,
+    cache_hit: false,
+    compute_ms: Date.now() - startTime,
+    taxonomy_version: 1
   };
 }

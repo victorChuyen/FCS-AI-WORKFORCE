@@ -149,8 +149,8 @@ export const LEVEL_SALE_LIST: LevelSaleItem[] = [
     badgeBg: 'bg-violet-50 text-violet-700 border-violet-200',
   },
   {
-    code: 'L1.8',
-    name: 'L1.8. Thiếu tuổi (<18)',
+    code: 'L1.7',
+    name: 'L1.7. Thiếu tuổi (<18)',
     group: 'SALE_NURTURE',
     role_scope: ['Sale', 'Leader Sale'],
     description: 'Chưa đủ 18 tuổi theo quy định pháp luật lao động',
@@ -255,14 +255,14 @@ export const VALID_STAGE_TRANSITIONS: Record<LevelSaleCode, LevelSaleCode[]> = {
   'C3.2': ['C3', 'L1'],
 
   // 2. SALE NURTURE
-  'L1': ['L1.1', 'L1.2', 'L1.3', 'L1.4', 'L1.5', 'L1.6', 'L1.8', 'L2'],
+  'L1': ['L1.1', 'L1.2', 'L1.3', 'L1.4', 'L1.5', 'L1.6', 'L1.7', 'L2'],
   'L1.1': ['L1', 'L1.2', 'L1.3', 'L1.4', 'L1.6', 'L2'],
   'L1.2': ['L1', 'L1.1', 'L1.3', 'L1.4', 'L1.6', 'L2'],
   'L1.3': ['L1', 'L1.2'], // Có thể chăm sóc lại nếu có nhu cầu mới
   'L1.4': ['L1', 'L1.2', 'L1.3', 'L1.6', 'L2'],
   'L1.5': ['L1.2', 'L1.3', 'L2'], // Nếu tìm được xưởng chấp nhận tuổi cao
   'L1.6': ['L1', 'L1.1', 'L1.2', 'L1.3', 'L2'],
-  'L1.8': ['L1.2', 'L1.3'], // Giữ liên hệ khi đủ tuổi
+  'L1.7': ['L1.2', 'L1.3'], // Giữ liên hệ khi đủ tuổi
 
   // 3. INTERVIEW
   'L2': ['L2.1', 'L2.2', 'L2.3', 'L1.2', 'L1.3'],

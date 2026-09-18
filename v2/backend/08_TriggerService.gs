@@ -45,37 +45,28 @@ function onEdit(e) {
       return;
     }
 
-    // 3. Tự động ghi nhận Audit Log cho thao tác sửa ô trên sheet nghiệp vụ
+    // 3. Tự động cập nhật cột updated_at & updated_by trên dòng được chỉnh sửa
     if (sheetName === V2_CONFIG.TAB_WORKERS || sheetName === V2_CONFIG.TAB_DEALS) {
-      var userEmail = Session.getActiveUser().getEmail() || "sheet_user@fcs.vn";
-      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      var fieldName = headers[col - 1] || ("COL_" + col);
-      var recordId = (sheet.getRange(row, 1).getValue() || "").toString();
-      var oldVal = e.oldValue !== undefined ? e.oldValue : "";
-      var newVal = e.value !== undefined ? e.value : range.getValue();
+      var lastCol = sheet.getLastColumn();
+      if (lastCol > 0) {
+        var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        var updatedIdx = headers.indexOf("updated_at");
+        var userIdx = headers.indexOf("updated_by");
+        var userEmail = Session.getActiveUser().getEmail() || "sheet_editor@fcs.vn";
+        var nowIso = new Date().toISOString();
 
-      var ss = sheet.getParent();
-      logAuditActionV2_(ss, {
-        actor_email: userEmail,
-        actor_role: "SHEET_EDITOR",
-        sheet_name: sheetName,
-        record_id: recordId,
-        action: "UPDATE",
-        field_name: fieldName,
-        old_value: oldVal,
-        new_value: newVal,
-        reason_notes: "Chỉnh sửa trực tiếp ô " + range.getA1Notation() + " trên Google Sheet"
-      });
+        // Tránh loop nếu chính cột updated_at/by được sửa
+        if (updatedIdx !== -1 && col !== (updatedIdx + 1)) {
+          sheet.getRange(row, updatedIdx + 1).setValue(nowIso);
+        }
+        if (userIdx !== -1 && col !== (userIdx + 1)) {
+          sheet.getRange(row, userIdx + 1).setValue(userEmail);
+        }
 
-      // 4. Tự động cập nhật cột updated_at & updated_by nếu sheet có cột này (CRM Deals)
-      var updatedIdx = headers.indexOf("updated_at");
-      var userIdx = headers.indexOf("updated_by");
-      var nowIso = new Date().toISOString();
-      if (updatedIdx !== -1) {
-        sheet.getRange(row, updatedIdx + 1).setValue(nowIso);
-      }
-      if (userIdx !== -1) {
-        sheet.getRange(row, userIdx + 1).setValue(userEmail);
+        // Đánh dấu bump version để cache được làm mới nhẹ nhàng
+        try {
+          CacheHelper_.bumpDataVersion(V2_CONFIG.PILOT_TENANT_ID);
+        } catch(cErr) {}
       }
     }
   } catch (err) {

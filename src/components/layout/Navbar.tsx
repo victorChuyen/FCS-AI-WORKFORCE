@@ -23,8 +23,10 @@ import {
   ExternalLink,
   Sparkles,
   Bot,
+  Trash2,
 } from 'lucide-react';
 import { AccountModal } from '../common/AccountModal';
+import { SuperAdminResetModal } from '../common/SuperAdminResetModal';
 
 export const Navbar: React.FC = () => {
   const {
@@ -46,6 +48,7 @@ export const Navbar: React.FC = () => {
   const { user: authUser, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [tenantSelectorOpen, setTenantSelectorOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -359,17 +362,30 @@ export const Navbar: React.FC = () => {
 
                     <div className="py-1">
                       {isSuperAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            navigateTo('/platform/tenants');
-                          }}
-                          className="w-full text-left px-3.5 py-2 text-purple-700 hover:bg-purple-50 flex items-center space-x-2 cursor-pointer font-bold"
-                        >
-                          <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
-                          <span>Quản trị Tenant (Super Admin)</span>
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              navigateTo('/platform/tenants');
+                            }}
+                            className="w-full text-left px-3.5 py-2 text-purple-700 hover:bg-purple-50 flex items-center space-x-2 cursor-pointer font-bold"
+                          >
+                            <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
+                            <span>Quản trị Tenant (Super Admin)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              setShowResetModal(true);
+                            }}
+                            className="w-full text-left px-3.5 py-2 text-rose-700 hover:bg-rose-50 flex items-center space-x-2 cursor-pointer font-bold"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
+                            <span>Reset Clean Slate (Xóa sạch Data)</span>
+                          </button>
+                        </>
                       )}
 
                       <button
@@ -707,6 +723,12 @@ export const Navbar: React.FC = () => {
         isOpen={showAccountModal}
         onClose={() => setShowAccountModal(false)}
         onLogout={handleLogout}
+      />
+
+      {/* Super Admin Clean Slate Reset Modal */}
+      <SuperAdminResetModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
       />
     </>
   );

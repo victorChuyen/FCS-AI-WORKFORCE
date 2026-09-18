@@ -226,6 +226,9 @@ function handleCheckInInterviewV2_(payload, ss) {
     }
   }, ss);
 
+  // Bump version để tự động invalidate cache
+  CacheHelper_.bumpDataVersion(payload.tenantId || payload.requestedTenantId);
+
   return {
     success: true,
     message: "Điểm danh phỏng vấn thành công: " + interviewResultLabel,

@@ -73,10 +73,23 @@ export const handoverApi = {
       console.warn('LocalStorage save notice:', e);
     }
 
-    // 2. Transmit to Google Apps Script backend
+    // 2. Transmit to Google Apps Script backend tab IN
     try {
-      await callApi('v2.deal.move_stage', {
-        notes: `[AI HANDOVER FEEDBACK] ${id} | ${data.type} (${priority}): ${data.content.slice(0, 100)}`
+      await callApi('v2.devsupport.log', {
+        ticket: {
+          id,
+          timestamp: newItem.timestamp,
+          senderName: data.senderName || 'Người dùng Bàn giao',
+          senderRole: data.senderRole || 'CLIENT',
+          category: data.type === 'BUG' ? 'BÁO LỖI (BUG)' : 'MỤC TIÊU PHÁT TRIỂN',
+          goal: data.content.slice(0, 100),
+          expectedOutput: 'Hoàn thiện tính năng chuẩn hệ điều hành',
+          content: data.content,
+          priority: priority === 'P0' ? 'P0 - CHẶN NGHIỆM THU' : priority === 'P1' ? 'P1 - NGHIÊM TRỌNG' : 'P2 - TRUNG BÌNH',
+          stage: 'GĐ1 & GĐ2',
+          status: 'CHỜ XỬ LÝ',
+          aiAction: 'AI CEO Lucky đã tiếp nhận phản hồi từ popup Bàn giao'
+        }
       });
     } catch {
       // Backend fallback handled gracefully
@@ -127,10 +140,23 @@ export const handoverApi = {
       console.warn('LocalStorage save notice:', e);
     }
 
-    // 2. Transmit audit log to Google Sheets
+    // 2. Transmit audit log to Google Sheets tab IN
     try {
-      await callApi('v2.deal.move_stage', {
-        notes: `[PHASE ACCEPTANCE SIGNOFF] ${certificateId} | Ký bởi: ${data.signerName} (${data.signerTitle})`
+      await callApi('v2.devsupport.log', {
+        ticket: {
+          id: certificateId,
+          timestamp,
+          senderName: data.signerName,
+          senderRole: data.signerTitle || 'Đại diện Khách hàng / Giám đốc',
+          category: 'NGHIỆM THU ĐIỆN TỬ',
+          goal: `Ký duyệt số hóa Giai đoạn: ${newSignoff.phase}`,
+          expectedOutput: 'Chứng chỉ số được công nhận chính thức',
+          content: `Đơn vị: ${newSignoff.companyName} | Hash: ${hash} | Ghi chú: ${newSignoff.notes}`,
+          priority: 'P0 - CHẶN NGHIỆM THU',
+          stage: newSignoff.phase,
+          status: 'ACCEPTED (ĐÃ DUYỆT)',
+          aiAction: 'Chứng chỉ số đã được lưu vĩnh viễn vào Google Sheet'
+        }
       });
     } catch {
       // Backend audit fallback

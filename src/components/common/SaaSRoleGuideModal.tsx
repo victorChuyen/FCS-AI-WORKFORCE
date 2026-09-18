@@ -92,7 +92,7 @@ const PLAYBOOKS: RolePlaybook[] = [
         shortDesc: 'Theo dõi tốc độ thẩm định hồ sơ, tỷ lệ phỏng vấn đỗ và số lượng nghỉ việc ngang.',
         checklist: [
           'Mở Pipeline Kanban (/app/pipeline) để xem toàn cảnh 19 cột trạng thái.',
-          'Đánh giá tỷ lệ chuyển đổi từ C3 (Data thô) sang L1.8 (Chốt lịch phỏng vấn xưởng).',
+          'Đánh giá tỷ lệ chuyển đổi từ C3 (Data thô) sang L2 (Chốt lịch phỏng vấn xưởng).',
           'Theo dõi số lượng lao động tại L2.3 (No Show) để yêu cầu Leader Sale tái phân bổ.',
         ],
         proTip: 'Nếu tỷ lệ No Show > 25%, cần rà soát lại kịch bản tư vấn và cam kết hỗ trợ xe đưa đón.',
@@ -224,14 +224,14 @@ const PLAYBOOKS: RolePlaybook[] = [
       },
       {
         stepNum: 2,
-        title: 'Gọi Tư Vấn & Cập Nhật Cấp Độ L1.1 - L1.8',
+        title: 'Gọi Tư Vấn & Cập Nhật Cấp Độ L1.1 - L1.7',
         stageBadge: 'L1 Chăm Sóc',
         shortDesc: 'Gọi điện trao đổi công việc, mức lương xưởng, chế độ KTX và cập nhật chính xác trạng thái.',
         checklist: [
           'Gọi điện thoại và ghi nhận kết quả ngay trên hệ thống.',
           'L1.1: Đã liên hệ - Đang trao đổi nguyện vọng và tay nghề.',
           'L1.3: Cân nhắc - Gửi bảng lương và hình ảnh KTX qua Zalo.',
-          'L1.8: Chốt hẹn - Ứng viên đồng ý lên xưởng phỏng vấn.',
+          'L2: Chốt hẹn - Ứng viên đồng ý lên xưởng phỏng vấn.',
         ],
         warning: 'Tuyệt đối không hứa hẹn sai mức lương thực tế hoặc chế độ phụ cấp của nhà máy.',
         actionRoute: '/app/workers',
