@@ -14,10 +14,18 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+const DEFAULT_PARTNERS: Partner[] = [
+  { id: 'PT-01', name: 'Foxconn Bắc Giang (KCN Quang Châu)', code: 'FOX-BG' } as any,
+  { id: 'PT-02', name: 'Luxshare ICT Bắc Ninh (KCN VSIP)', code: 'LUX-BN' } as any,
+  { id: 'PT-03', name: 'Goertek Vina Bắc Ninh (KCN Quế Võ)', code: 'GOER-QV' } as any,
+  { id: 'PT-04', name: 'Amkor Technology Bắc Ninh (KCN Yên Phong II)', code: 'AMK-YP' } as any,
+  { id: 'PT-05', name: 'Foxconn Nghệ An (WHA Industrial Zone 1)', code: 'FOX-NA' } as any,
+];
+
 interface ReactivationInviteModalProps {
   isOpen: boolean;
   worker: Worker | null;
-  partners: Partner[];
+  partners?: Partner[];
   onClose: () => void;
   onSuccess?: (note: string) => void;
 }
@@ -31,15 +39,16 @@ export const ReactivationInviteModal: React.FC<ReactivationInviteModalProps> = (
 }) => {
   if (!isOpen || !worker) return null;
 
+  const partnerList = (partners && partners.length > 0) ? partners : DEFAULT_PARTNERS;
   const [selectedPartnerId, setSelectedPartnerId] = useState(
-    partners[0]?.id || 'Foxconn KCN Quang Châu'
+    partnerList[0]?.id || 'PT-01'
   );
   const [selectedSalary, setSelectedSalary] = useState('9.000.000 - 13.000.000 VNĐ/tháng');
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<string>('');
 
   const currentPartner =
-    partners.find(p => p.id === selectedPartnerId)?.name || selectedPartnerId;
+    partnerList.find(p => p.id === selectedPartnerId)?.name || selectedPartnerId;
   const cleanPhone = (worker.phone || '').replace(/\D/g, '');
 
   const generatedMessage = `Chào anh/chị ${worker.fullName}, em là quản lý nhân sự tại FCS.
@@ -117,19 +126,11 @@ Anh/chị có muốn đăng ký giữ vị trí đợt này không ạ? Anh/ch�
                 onChange={e => setSelectedPartnerId(e.target.value)}
                 className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500"
               >
-                {partners.length > 0 ? (
-                  partners.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="Foxconn KCN Quang Châu">Foxconn KCN Quang Châu</option>
-                    <option value="Luxshare KCN Vân Trung">Luxshare KCN Vân Trung</option>
-                    <option value="Hana Micron KCN Vân Trung">Hana Micron KCN Vân Trung</option>
-                  </>
-                )}
+                {partnerList.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
               </select>
             </div>
 

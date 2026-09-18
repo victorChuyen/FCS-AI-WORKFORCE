@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { AttendanceReviewItem, FollowUpItem, DuplicateSuspect } from '../types';
@@ -16,10 +17,11 @@ import {
 
 export const ReviewPage: React.FC = () => {
   const { currentRoute, navigateTo, routeParams, refreshKey, currentUser } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Tab selection: 'matching' | 'followup' | 'duplicate'
-  const targetParam = (routeParams.type || routeParams.tab) as string;
-  const initialTab = (targetParam === 'followup' || targetParam === 'duplicate') ? targetParam : 'matching';
+  // Tab selection: 'matching' | 'followup' | 'duplicate' from search params or routeParams
+  const urlParam = (searchParams.get('tab') || searchParams.get('type') || routeParams.type || routeParams.tab) as string;
+  const initialTab = (urlParam === 'followup' || urlParam === 'duplicate') ? urlParam : 'matching';
   const [activeTab, setActiveTab] = useState<'matching' | 'followup' | 'duplicate'>(initialTab);
 
   const [attendanceReviews, setAttendanceReviews] = useState<AttendanceReviewItem[]>([]);
@@ -28,11 +30,11 @@ export const ReviewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const param = (routeParams.type || routeParams.tab) as string;
+    const param = (searchParams.get('tab') || searchParams.get('type') || routeParams.type || routeParams.tab) as string;
     if (param === 'matching' || param === 'followup' || param === 'duplicate') {
       setActiveTab(param);
     }
-  }, [routeParams.type, routeParams.tab]);
+  }, [searchParams, routeParams.type, routeParams.tab]);
 
   const fetchReviewData = async () => {
     setLoading(true);
@@ -126,7 +128,8 @@ export const ReviewPage: React.FC = () => {
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id as any);
-                navigateTo(`/review?tab=${tab.id}`);
+                setSearchParams({ tab: tab.id });
+                navigateTo('/app/confirmations', { tab: tab.id });
               }}
               className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                 active

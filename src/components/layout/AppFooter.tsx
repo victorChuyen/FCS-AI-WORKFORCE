@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ShieldCheck,
   Calendar,
@@ -11,6 +11,8 @@ import {
   Lock,
   Headphones,
   Zap,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface AppFooterProps {
@@ -18,9 +20,82 @@ interface AppFooterProps {
 }
 
 export const AppFooter: React.FC<AppFooterProps> = ({ onNavigate }) => {
+  // Mặc định thu gọn để tối ưu tối đa không gian làm việc cho màn hình app
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fcs_app_footer_collapsed');
+      return saved !== null ? saved === 'true' : true; // Mặc định true (thu gọn)
+    }
+    return true;
+  });
+
+  const toggleCollapse = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('fcs_app_footer_collapsed', String(next));
+      }
+      return next;
+    });
+  };
+
+  // KHI THU GỌN: Chỉ hiển thị thanh status bar mảnh 38px, giải phóng 100% không gian làm việc
+  if (isCollapsed) {
+    return (
+      <footer className="mt-auto bg-slate-950/95 text-slate-400 border-t border-slate-800/90 py-2 pb-20 md:pb-2 transition-all">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+          <div className="flex items-center space-x-2 text-[11px] text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
+            <span>FCS AI WORKFORCE OS • Chuẩn VWW • Founder &amp; Chairman: <strong>Victor Chuyen</strong></span>
+          </div>
+
+          <div className="flex items-center space-x-3 text-[11px]">
+            <a
+              href="https://zalo.me/0989890022"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-emerald-400 transition-colors hidden sm:inline"
+            >
+              Zalo: 0989.890.022
+            </a>
+            <span className="text-slate-700 hidden sm:inline">•</span>
+            <button
+              type="button"
+              onClick={toggleCollapse}
+              className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-850 text-blue-400 hover:text-blue-300 border border-slate-800 font-bold text-[11px] cursor-pointer shadow-xs transition-colors"
+              title="Mở rộng thông tin Cố vấn &amp; Tiêu chuẩn Hệ thống"
+            >
+              <span>Mở rộng Chân trang (Cố vấn &amp; Hỗ trợ)</span>
+              <ChevronUp className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
+  // KHI MỞ RỘNG: Hiển thị đầy đủ thông tin kèm nút Thu gọn
   return (
-    <footer className="mt-auto bg-slate-950 text-slate-400 border-t border-slate-800/80 pt-10 pb-20 md:pb-10 transition-colors">
+    <footer className="mt-auto bg-slate-950 text-slate-400 border-t border-slate-800/80 pt-6 pb-20 md:pb-10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Nút Thu Gọn Chân Trang Nổi Bật Trên Cùng */}
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-800/80">
+          <div className="flex items-center space-x-2 text-xs text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Thông tin Cố vấn Chiến lược &amp; Tiêu chuẩn Bảo mật Doanh nghiệp</span>
+          </div>
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 text-xs font-semibold cursor-pointer transition-all shadow-sm"
+            title="Thu gọn chân trang để tối ưu không gian hiển thị bảng dữ liệu"
+          >
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            <span>Thu gọn Chân trang (Tối ưu không gian làm việc)</span>
+          </button>
+        </div>
+
         {/* Top VIP Consultation Callout Banner */}
         <div className="mb-10 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-950/80 via-indigo-950/60 to-slate-900 border border-blue-800/40 shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -88,7 +163,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({ onNavigate }) => {
             </p>
             <div className="pt-1 flex items-center space-x-2 text-[11px] text-slate-500">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Hạ tầng Cloudflare Edge & Firebase Admin SDK</span>
+              <span>Bảo mật hạ tầng đám mây đa tầng chuẩn Doanh nghiệp</span>
             </div>
           </div>
 
@@ -173,7 +248,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({ onNavigate }) => {
               </li>
               <li className="hover:text-white transition-colors cursor-pointer flex items-center space-x-1.5">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                <span>Phân quyền RBAC 5 cấp độ bảo mật</span>
+                <span>Phân quyền RBAC đa tầng bảo mật</span>
               </li>
             </ul>
           </div>
@@ -187,14 +262,14 @@ export const AppFooter: React.FC<AppFooterProps> = ({ onNavigate }) => {
             <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2 text-[11px]">
               <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
                 <Database className="w-3.5 h-3.5" />
-                <span>100% Real Google Sheets</span>
+                <span>Dữ liệu Doanh nghiệp Độc Lập</span>
               </div>
               <p className="text-slate-400 leading-snug">
-                Dữ liệu được cô lập theo từng Tenant (`FCS-000001_DATA`). Tuyệt đối không dùng dữ liệu ảo.
+                Dữ liệu được cô lập theo từng Doanh nghiệp. Tuyệt đối không rò rỉ chéo giữa các đơn vị.
               </p>
               <div className="pt-1 flex items-center space-x-1.5 text-slate-500 font-mono text-[10px]">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Cloudflare Edge SSL Active</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Bảo Mật SSL &amp; Mã Hóa Đa Tầng</span>
               </div>
             </div>
           </div>
@@ -226,7 +301,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({ onNavigate }) => {
               Cal.com 1:1
             </a>
             <span className="text-slate-700">•</span>
-            <span className="text-emerald-400 font-bold font-mono">fcs.breaths.live</span>
+            <span className="text-emerald-400 font-bold font-mono">fcs-crm.breaths.live</span>
           </div>
         </div>
       </div>

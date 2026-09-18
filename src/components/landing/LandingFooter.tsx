@@ -52,7 +52,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onNavigate }) => {
             <div className="space-y-1.5 text-[11px] text-slate-400">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Bảo mật hạ tầng Google Cloud & Firebase Authentication</span>
+                <span>Bảo mật hạ tầng đám mây đa tầng chuẩn Doanh nghiệp</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Database className="w-4 h-4 text-blue-400 shrink-0" />
@@ -60,7 +60,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onNavigate }) => {
               </div>
               <div className="flex items-center space-x-2 text-amber-300/90 font-medium">
                 <Award className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Kiến trúc Multi-Tenant chuẩn doanh nghiệp</span>
+                <span>Cô lập dữ liệu độc lập cho từng Doanh nghiệp đối tác</span>
               </div>
             </div>
           </div>
@@ -252,7 +252,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onNavigate }) => {
               Cal.com 1:1
             </a>
             <span className="text-slate-700">•</span>
-            <span className="text-emerald-400 font-bold font-mono">fcs.breaths.live</span>
+            <span className="text-emerald-400 font-bold font-mono">fcs-crm.breaths.live</span>
           </div>
         </div>
       </div>

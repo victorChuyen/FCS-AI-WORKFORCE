@@ -29,6 +29,8 @@ export const AddInterviewModal: React.FC<AddInterviewModalProps> = ({
   const [interviewer, setInterviewer] = useState('Phòng Tuyển dụng đối tác');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -48,12 +50,34 @@ export const AddInterviewModal: React.FC<AddInterviewModalProps> = ({
     if (isOpen) load();
   }, [isOpen]);
 
+  const clearFieldError = (f: string) => {
+    if (fieldErrors[f]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[f];
+        return next;
+      });
+    }
+    if (formError) setFormError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPartnerId || !selectedJobId || !scheduledAt) {
-      showNotification('Vui lòng chọn đối tác và thời gian phỏng vấn', 'warning');
+    setFormError(null);
+
+    const errs: Record<string, string> = {};
+    if (!selectedPartnerId) errs.partner = 'Vui lòng chọn đối tác / nhà máy.';
+    if (!selectedJobId) errs.job = 'Vui lòng chọn vị trí tuyển dụng.';
+    if (!scheduledAt) errs.scheduledAt = 'Vui lòng chọn thời gian phỏng vấn.';
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      const msg = Object.values(errs)[0];
+      setFormError(msg);
+      showNotification(msg, 'warning');
       return;
     }
+
     setLoading(true);
     try {
       await api.createInterview({
@@ -68,7 +92,9 @@ export const AddInterviewModal: React.FC<AddInterviewModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      showNotification(err.message || 'Lỗi đặt lịch phỏng vấn', 'warning');
+      const errMsg = err?.message || 'Lỗi đặt lịch phỏng vấn';
+      setFormError(errMsg);
+      showNotification(errMsg, 'warning');
     } finally {
       setLoading(false);
     }

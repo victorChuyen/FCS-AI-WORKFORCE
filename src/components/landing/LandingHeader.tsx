@@ -131,6 +131,13 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
               <>
                 <button
                   type="button"
+                  onClick={onOpenAuditModal}
+                  className="px-3.5 py-2 text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 border border-orange-500/30 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  TƯ VẤN 1:1
+                </button>
+                <button
+                  type="button"
                   onClick={() => onNavigate('/login')}
                   className="px-3.5 py-2 text-slate-300 hover:text-white hover:bg-slate-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >

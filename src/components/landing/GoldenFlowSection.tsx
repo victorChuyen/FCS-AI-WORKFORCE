@@ -262,11 +262,11 @@ export const GoldenFlowSection: React.FC = () => {
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="text-xs text-slate-300">
               Mỗi chặng đều được đồng bộ hóa với{' '}
-              <strong className="text-white font-semibold">Backend API 3.2.0</strong> không làm rơi rớt dữ liệu.
+              <strong className="text-white font-semibold">Hệ thống điều hành trung tâm</strong> không làm rơi rớt dữ liệu.
             </span>
           </div>
           <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-900/50 shrink-0">
-            Sprint 01 Verified
+            ĐÃ KIỂM ĐỊNH THỰC TẾ
           </span>
         </div>
       </div>

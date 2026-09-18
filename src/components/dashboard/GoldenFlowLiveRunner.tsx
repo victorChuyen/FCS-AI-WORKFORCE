@@ -146,27 +146,33 @@ export const GoldenFlowLiveRunner: React.FC = () => {
 
         {/* Action Button */}
         <div className="flex items-center gap-2.5 self-start lg:self-center">
-          <button
-            onClick={handleRunGoldenFlow}
-            disabled={isRunning}
-            className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-lg transition-all cursor-pointer ${
-              isRunning
-                ? 'bg-blue-600/70 text-white/80 cursor-not-allowed'
-                : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 hover:shadow-emerald-500/25 active:scale-95'
-            }`}
-          >
-            {isRunning ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                <span>Đang xử lý luồng...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-slate-950" />
-                <span>Chạy mẫu Golden Flow (1-Click)</span>
-              </>
-            )}
-          </button>
+          {currentUser.role === 'VIEWER' ? (
+            <div className="px-3.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center space-x-1.5">
+              <span>Chế độ Người xem (Chỉ đọc)</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleRunGoldenFlow}
+              disabled={isRunning}
+              className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-lg transition-all cursor-pointer ${
+                isRunning
+                  ? 'bg-blue-600/70 text-white/80 cursor-not-allowed'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 hover:shadow-emerald-500/25 active:scale-95'
+              }`}
+            >
+              {isRunning ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Đang xử lý luồng...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>Chạy mẫu Golden Flow (1-Click)</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 

@@ -18,25 +18,32 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onL
   if (!isOpen) return null;
 
   const isSuperAdmin = currentUser.isSuperAdmin || (user?.email || currentUser.email) === 'coach.chuyen@gmail.com';
+  const isViewer = currentUser.role === 'VIEWER';
+  const isStaff = currentUser.role === 'RECRUITER' || currentUser.role === 'STAFF';
 
   const formatRoleName = (role: string) => {
     switch (role) {
       case 'PLATFORM_SUPER_ADMIN':
-        return 'Super Admin (Toàn quyền quản trị nền tảng)';
+        return 'Platform Super Admin (Quản trị toàn nền tảng)';
       case 'TENANT_ADMIN':
-        return 'Tenant Admin (Toàn quyền điều hành doanh nghiệp)';
-      case 'TENANT_MANAGER':
-        return 'Quản lý Vận hành (Theo phạm vi văn phòng)';
-      case 'RECRUITER':
-        return 'Chuyên viên Tuyển dụng (Hồ sơ phụ trách)';
-      case 'VIEWER':
-        return 'Xem báo cáo (Chỉ đọc)';
       case 'ADMIN':
-        return 'Admin (Toàn quyền hệ thống)';
+        return 'Tenant Admin / Giám đốc (Toàn quyền điều hành FCS)';
+      case 'ACCOUNTANT':
+        return 'Kế toán Đối soát & Hoa hồng (Duyệt chi Cấp 3)';
+      case 'TENANT_MANAGER':
       case 'MANAGER':
-        return 'Quản lý Văn phòng';
+        return 'Trưởng phòng Vận hành (Quản lý chi nhánh & Duyệt Cấp 2)';
+      case 'FIELD_OFFICER':
+        return 'Cán bộ Hiện trường (Duyệt PV & Đi làm tại xưởng)';
+      case 'LEADER_SALE':
+        return 'Trưởng nhóm Tuyển dụng (Chia data & Duyệt Cấp 1)';
+      case 'RECRUITER':
       case 'STAFF':
-        return 'Chuyên viên Tuyển dụng';
+        return 'Chuyên viên Tuyển dụng (Tư vấn L1 & Hẹn PV L2)';
+      case 'MARKETING':
+        return 'Chuyên viên Marketing (Tiếp nhận data C3)';
+      case 'VIEWER':
+        return 'Người xem (Chỉ đọc)';
       default:
         return role;
     }
@@ -133,45 +140,78 @@ export const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, onL
           </div>
         </div>
 
-        {/* Data Source Configuration & Status */}
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-900 flex items-center space-x-1.5">
-              <Database className="w-4 h-4 text-blue-600" />
-              <span>Nguồn dữ liệu vận hành:</span>
-            </span>
-            <span
-              className={`px-2 py-0.5 rounded text-[11px] font-extrabold ${
-                isMock
-                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                  : healthStatus === 'healthy'
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-rose-100 text-rose-800 border border-rose-300'
-              }`}
-            >
-              {isMock ? 'Dữ liệu Demo (Mock)' : healthStatus === 'healthy' ? 'Google Sheet (Kết nối tốt)' : 'Google Sheet (Lỗi kết nối)'}
-            </span>
-          </div>
-
-          <div className="text-[11px] text-slate-600 space-y-1">
-            <div className="flex items-start justify-between gap-2">
-              <span className="text-slate-500 shrink-0">Endpoint Web App:</span>
-              <span className="font-mono text-[10px] text-slate-700 break-all text-right select-all bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                {API_BASE_URL || 'Chưa cấu hình (Trống)'}
+        {/* Data Source Configuration & Status - Phân quyền hiển thị nghiêm ngặt */}
+        {isViewer ? (
+          <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-amber-950 flex items-center space-x-1.5">
+                <Database className="w-4 h-4 text-amber-600" />
+                <span>Chế độ dữ liệu vận hành:</span>
+              </span>
+              <span className="px-2.5 py-0.5 rounded text-[11px] font-extrabold bg-amber-200 text-amber-900 border border-amber-300">
+                Dữ liệu Mẫu (Mock Demo Sandbox)
               </span>
             </div>
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-slate-500">Chuyển chế độ:</span>
-              <button
-                type="button"
-                onClick={() => toggleMockMode()}
-                className="px-2.5 py-1 bg-white hover:bg-slate-100 text-blue-700 border border-blue-200 rounded font-bold text-[11px] cursor-pointer shadow-2xs transition-colors"
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              Tài khoản Người xem (Viewer) được cấp quyền tham quan trải nghiệm trên môi trường dữ liệu mẫu chuẩn Verified Working Worker (VWW).
+            </p>
+          </div>
+        ) : isStaff && !isSuperAdmin ? (
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-900 flex items-center space-x-1.5">
+                <Database className="w-4 h-4 text-blue-600" />
+                <span>Nguồn dữ liệu vận hành:</span>
+              </span>
+              <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                Doanh nghiệp ({currentUser.tenantId || 'FCS-000001'})
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Phạm vi dữ liệu: Hồ sơ lao động thuộc văn phòng phụ trách ({currentUser.officeId || 'OFF-01'}).
+            </p>
+          </div>
+        ) : (
+          /* Chỉ Quản trị viên cấp cao (Super Admin / Tenant Admin) mới thấy thông số kỹ thuật */
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-900 flex items-center space-x-1.5">
+                <Database className="w-4 h-4 text-blue-600" />
+                <span>Nguồn dữ liệu quản trị:</span>
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded text-[11px] font-extrabold ${
+                  isMock
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                    : healthStatus === 'healthy'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-rose-100 text-rose-800 border border-rose-300'
+                }`}
               >
-                {isMock ? 'Thử kết nối Google Sheet' : 'Chuyển về Dữ liệu Demo'}
-              </button>
+                {isMock ? 'Dữ liệu Demo (Mock)' : healthStatus === 'healthy' ? 'Google Sheet (Kết nối tốt)' : 'Google Sheet (Lỗi kết nối)'}
+              </span>
+            </div>
+
+            <div className="text-[11px] text-slate-600 space-y-1">
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-slate-500 shrink-0">Endpoint Quản trị:</span>
+                <span className="font-mono text-[10px] text-slate-700 break-all text-right select-all bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                  {API_BASE_URL || 'Chưa cấu hình (Trống)'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-slate-500">Chuyển chế độ:</span>
+                <button
+                  type="button"
+                  onClick={() => toggleMockMode()}
+                  className="px-2.5 py-1 bg-white hover:bg-slate-100 text-blue-700 border border-blue-200 rounded font-bold text-[11px] cursor-pointer shadow-2xs transition-colors"
+                >
+                  {isMock ? 'Thử kết nối Google Sheet' : 'Chuyển về Dữ liệu Demo'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Security & Multi-tenant isolation Note */}
         <div className="p-3.5 bg-blue-50/60 border border-blue-100 rounded-xl text-xs text-slate-600 space-y-1">

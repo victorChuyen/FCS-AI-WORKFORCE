@@ -109,7 +109,7 @@ export const TodayPage: React.FC = () => {
       title: 'bản ghi chấm công chưa khớp',
       reason: openP0[0]?.reason || 'Dữ liệu file chấm công đối tác gửi về chưa khớp hoàn toàn số điện thoại/CCCD',
       dueText: 'Hạn chót: 17:00 hôm nay',
-      onAction: () => navigateTo('/review?type=matching'),
+      onAction: () => navigateTo('/app/confirmations', { tab: 'matching' }),
     },
     {
       priority: Priority.P1,
@@ -117,7 +117,7 @@ export const TodayPage: React.FC = () => {
       title: 'lao động đã đậu chưa xác nhận đi làm',
       reason: openP1[0]?.reason || 'Đã có kết quả đậu phỏng vấn nhưng chưa chốt ca làm hoặc chưa đón xe',
       dueText: 'Cần liên hệ trong 4h',
-      onAction: () => navigateTo('/review?type=followup'),
+      onAction: () => navigateTo('/app/confirmations', { tab: 'followup' }),
     },
     {
       priority: Priority.P2,
@@ -125,7 +125,7 @@ export const TodayPage: React.FC = () => {
       title: 'hồ sơ nghi trùng',
       reason: openP2[0]?.reason || 'Phát hiện trùng lặp Số điện thoại hoặc CCCD từ lượt đăng ký Google Form gần nhất',
       dueText: 'Đối chiếu trước khi gọi',
-      onAction: () => navigateTo('/review?type=duplicate'),
+      onAction: () => navigateTo('/app/confirmations', { tab: 'duplicate' }),
     },
     {
       priority: Priority.P3,
@@ -133,7 +133,7 @@ export const TodayPage: React.FC = () => {
       title: 'lao động phỏng vấn',
       reason: openP3[0]?.reason || 'Lịch phỏng vấn trực tiếp tại xưởng đối tác',
       dueText: 'Ca phỏng vấn hôm nay',
-      onAction: () => navigateTo('/workers?status=INTERVIEW_PENDING'),
+      onAction: () => navigateTo('/app/workers', { status: 'INTERVIEW_PENDING' }),
     },
   ];
 
@@ -280,9 +280,9 @@ export const TodayPage: React.FC = () => {
         counts={metrics?.pipelineCounts}
         onStageClick={statusFilter => {
           if (statusFilter) {
-            navigateTo(`/workers?status=${statusFilter}`);
+            navigateTo('/app/workers', { status: statusFilter });
           } else {
-            navigateTo('/pipeline');
+            navigateTo('/app/pipeline');
           }
         }}
       />

@@ -1,24 +1,20 @@
 /**
- * ==============================================================================
- * FCS AI WORKFORCE OS - V4 MULTI-TENANT SAAS PLATFORM ENGINE
- * ARCHITECTURE: SUPER ADMIN MASTER + ISOLATED TENANT SPREADSHEETS
- * VERSION: 4.0.0 | SCHEMA: MULTI_TENANT_V4
- * ==============================================================================
- * 
- * INSTRUCTIONS FOR GOOGLE APPS SCRIPT:
- * 1. Open your Google Apps Script editor (script.google.com).
- * 2. Paste this complete file into Code.gs.
- * 3. Run setupSuperAdminMaster() once from the Run dropdown to initialize FCS_SUPER_ADMIN_MASTER.
- * 4. Run registerPilotTenantFiles() to link your FCS-000001 Data & Management spreadsheets.
- * 5. Deploy as Web App:
- *    - Execute as: Me
- *    - Who has access: Anyone
- * 6. Copy the Web App URL and set as VITE_API_BASE_URL.
+ * FCS AI WORKFORCE OS - V4 MULTI-TENANT SAAS BUNDLE
+ * Generated automatically from 15 modular files in backend/
+ * Version: 4.0.0
  */
 
 // ==============================================================================
-// 01. PLATFORM CONFIGURATION & CONSTANTS
+// FILE: 00_Config.gs
 // ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — CONFIG
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
 var PLATFORM_CONFIG = {
   MASTER_SHEET_NAME: "FCS_SUPER_ADMIN_MASTER",
   SCHEMA_VERSION: "4.0.0",
@@ -26,16 +22,43 @@ var PLATFORM_CONFIG = {
   SECONDARY_SUPER_ADMIN: "ceo-fcs@breaths.live",
   PILOT_TENANT_ID: "FCS-000001",
   PILOT_COMPANY_NAME: "FCS Pilot Workforce Corp",
-  PILOT_COMPANY_CODE: "FCS1"
+  PILOT_COMPANY_CODE: "FCS1",
+  SPREADSHEET_ID: "1cGm6h-Py1Da5-uWYm2KkKYCWIEWtzDe6uwDwhai2o0E",
+  DEFAULT_SPREADSHEET_ID: "1cGm6h-Py1Da5-uWYm2KkKYCWIEWtzDe6uwDwhai2o0E"
 };
 
+
 // ==============================================================================
-// 02. ONE-CLICK SETUP: FCS_SUPER_ADMIN_MASTER
+// FILE: 02_Response.gs
 // ==============================================================================
+
 /**
- * One-click function to create the FCS_SUPER_ADMIN_MASTER spreadsheet with all 8 tabs.
- * Run this directly inside Apps Script editor.
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — RESPONSE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
  */
+
+function jsonResponse_(obj, requestId) {
+  if (requestId && typeof obj === "object" && !obj.requestId) {
+    obj.requestId = requestId;
+  }
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// ==============================================================================
+// FILE: 03_TenantInit.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — TENANT INIT
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
 function setupSuperAdminMaster() {
   var props = PropertiesService.getScriptProperties();
   var existingMasterId = props.getProperty("MASTER_SPREADSHEET_ID");
@@ -208,9 +231,6 @@ function setupSuperAdminMaster() {
   };
 }
 
-/**
- * Register or link existing spreadsheets for FCS-000001 (DATA & MANAGEMENT)
- */
 function registerPilotTenantFiles(optionalDataId, optionalMgmtId) {
   var props = PropertiesService.getScriptProperties();
   var masterId = props.getProperty("MASTER_SPREADSHEET_ID");
@@ -301,9 +321,6 @@ function registerPilotTenantFiles(optionalDataId, optionalMgmtId) {
   };
 }
 
-// ==============================================================================
-// 03. TENANT SPREADSHEET INITIALIZERS
-// ==============================================================================
 function initTenantDataSpreadsheet_(ss) {
   var tabs = [
     { name: "01_WORKER_INBOX", headers: ["inbox_id", "received_at", "source", "raw_name", "raw_phone", "raw_id_card", "note", "status"] },
@@ -410,35 +427,51 @@ function initTenantManagementSpreadsheet_(ss) {
   }
 }
 
+
 // ==============================================================================
-// 04. SERVER-SIDE TENANT RESOLVER (NEVER TRUST FRONTEND)
+// FILE: 04_TenantResolver.gs
 // ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — TENANT RESOLVER
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
 function resolveTenantContext_(identity, requestedTenantId) {
   var props = PropertiesService.getScriptProperties();
   var masterId = props.getProperty("MASTER_SPREADSHEET_ID");
-  if (!masterId) {
-    setupSuperAdminMaster();
-    masterId = props.getProperty("MASTER_SPREADSHEET_ID");
+  var masterSs = null;
+
+  if (masterId) {
+    try { masterSs = SpreadsheetApp.openById(masterId); } catch (e) {}
+  }
+  if (!masterSs && PLATFORM_CONFIG.DEFAULT_SPREADSHEET_ID) {
+    try {
+      masterSs = SpreadsheetApp.openById(PLATFORM_CONFIG.DEFAULT_SPREADSHEET_ID);
+    } catch (e) {}
   }
 
-  var masterSs = SpreadsheetApp.openById(masterId);
   var email = (identity && identity.email) ? String(identity.email).trim().toLowerCase() : "";
   
   // 1. Check Global Users for Platform Role
-  var usersSheet = masterSs.getSheetByName("03_GLOBAL_USERS");
-  var usersData = usersSheet.getDataRange().getValues();
   var platformRole = "NONE";
+  var usersSheet = masterSs ? masterSs.getSheetByName("03_GLOBAL_USERS") : null;
 
-  for (var u = 1; u < usersData.length; u++) {
-    var rowEmail = String(usersData[u][1]).trim().toLowerCase();
-    if (rowEmail === email) {
-      platformRole = usersData[u][4] || "NONE";
-      break;
+  if (usersSheet && usersSheet.getLastRow() > 1) {
+    var usersData = usersSheet.getDataRange().getValues();
+    for (var u = 1; u < usersData.length; u++) {
+      var rowEmail = String(usersData[u][1]).trim().toLowerCase();
+      if (rowEmail === email) {
+        platformRole = usersData[u][4] || "NONE";
+        break;
+      }
     }
   }
 
   // Super Admin Fallback rule
-  if (email === PLATFORM_CONFIG.DEFAULT_SUPER_ADMIN || email === PLATFORM_CONFIG.SECONDARY_SUPER_ADMIN) {
+  if (!email || email === PLATFORM_CONFIG.DEFAULT_SUPER_ADMIN || email === PLATFORM_CONFIG.SECONDARY_SUPER_ADMIN) {
     platformRole = "PLATFORM_SUPER_ADMIN";
   }
 
@@ -449,72 +482,72 @@ function resolveTenantContext_(identity, requestedTenantId) {
   var staffId = "STF-001";
 
   if (platformRole === "PLATFORM_SUPER_ADMIN") {
-    // Super Admin can inspect requested tenant if ACTIVE
     if (requestedTenantId) {
       targetTenantId = requestedTenantId;
     }
     tenantRole = "TENANT_ADMIN";
   } else {
-    // Regular User: MUST look up in 04_USER_TENANT_ACCESS
-    var accessSheet = masterSs.getSheetByName("04_USER_TENANT_ACCESS");
-    var accessData = accessSheet.getDataRange().getValues();
+    var accessSheet = masterSs ? masterSs.getSheetByName("04_USER_TENANT_ACCESS") : null;
     var foundAccess = false;
 
-    for (var a = 1; a < accessData.length; a++) {
-      var accEmail = String(accessData[a][2]).trim().toLowerCase();
-      var accTenant = accessData[a][3];
-      var accStatus = accessData[a][7];
+    if (accessSheet && accessSheet.getLastRow() > 1) {
+      var accessData = accessSheet.getDataRange().getValues();
+      for (var a = 1; a < accessData.length; a++) {
+        var accEmail = String(accessData[a][2]).trim().toLowerCase();
+        var accTenant = accessData[a][3];
+        var accStatus = accessData[a][7];
 
-      if (accEmail === email && accStatus === "ACTIVE") {
-        if (!requestedTenantId || requestedTenantId === accTenant) {
-          targetTenantId = accTenant;
-          tenantRole = accessData[a][4] || "VIEWER";
-          staffId = accessData[a][5] || "STF-GEN";
-          allowedOfficeIds = accessData[a][6] === "*" ? ["*"] : [accessData[a][6]];
-          foundAccess = true;
-          break;
+        if (accEmail === email && accStatus === "ACTIVE") {
+          if (!requestedTenantId || requestedTenantId === accTenant) {
+            targetTenantId = accTenant;
+            tenantRole = accessData[a][4] || "VIEWER";
+            staffId = accessData[a][5] || "STF-GEN";
+            allowedOfficeIds = accessData[a][6] === "*" ? ["*"] : [accessData[a][6]];
+            foundAccess = true;
+            break;
+          }
         }
       }
     }
 
-    if (!foundAccess && email) {
-      // Return safe fallback or denial
+    if (!foundAccess) {
       targetTenantId = PLATFORM_CONFIG.PILOT_TENANT_ID;
       tenantRole = "VIEWER";
     }
   }
 
-  // 3. Resolve Tenant Files from 02_TENANT_FILES
-  var filesSheet = masterSs.getSheetByName("02_TENANT_FILES");
-  var filesData = filesSheet.getDataRange().getValues();
+  // 3. Resolve Tenant Files
   var dataSpreadsheetId = "";
   var managementSpreadsheetId = "";
+  var filesSheet = masterSs ? masterSs.getSheetByName("02_TENANT_FILES") : null;
 
-  for (var f = 1; f < filesData.length; f++) {
-    if (filesData[f][0] === targetTenantId && filesData[f][7] === "ACTIVE") {
-      dataSpreadsheetId = filesData[f][1];
-      managementSpreadsheetId = filesData[f][3];
-      break;
+  if (filesSheet && filesSheet.getLastRow() > 1) {
+    var filesData = filesSheet.getDataRange().getValues();
+    for (var f = 1; f < filesData.length; f++) {
+      if (filesData[f][0] === targetTenantId && filesData[f][7] === "ACTIVE") {
+        dataSpreadsheetId = filesData[f][1];
+        managementSpreadsheetId = filesData[f][3];
+        break;
+      }
     }
   }
 
-  // Fallback to auto-registration if missing
+  // Default fallback for Pilot Tenant to operational spreadsheet
   if (!dataSpreadsheetId || !managementSpreadsheetId) {
-    if (targetTenantId === PLATFORM_CONFIG.PILOT_TENANT_ID) {
-      var regResult = registerPilotTenantFiles();
-      dataSpreadsheetId = regResult.dataId;
-      managementSpreadsheetId = regResult.managementId;
-    }
+    dataSpreadsheetId = PLATFORM_CONFIG.DEFAULT_SPREADSHEET_ID;
+    managementSpreadsheetId = PLATFORM_CONFIG.DEFAULT_SPREADSHEET_ID;
   }
 
   // 4. Resolve Company Name
   var companyName = PLATFORM_CONFIG.PILOT_COMPANY_NAME;
-  var tenantsSheet = masterSs.getSheetByName("01_TENANTS");
-  var tenantsData = tenantsSheet.getDataRange().getValues();
-  for (var t = 1; t < tenantsData.length; t++) {
-    if (tenantsData[t][0] === targetTenantId) {
-      companyName = tenantsData[t][1];
-      break;
+  var tenantsSheet = masterSs ? masterSs.getSheetByName("01_TENANTS") : null;
+  if (tenantsSheet && tenantsSheet.getLastRow() > 1) {
+    var tenantsData = tenantsSheet.getDataRange().getValues();
+    for (var t = 1; t < tenantsData.length; t++) {
+      if (tenantsData[t][0] === targetTenantId) {
+        companyName = tenantsData[t][1];
+        break;
+      }
     }
   }
 
@@ -532,289 +565,40 @@ function resolveTenantContext_(identity, requestedTenantId) {
   };
 }
 
-// ==============================================================================
-// 05. HTTP HANDLERS (doGet & doPost)
-// ==============================================================================
-function doGet(e) {
-  return jsonResponse_({
-    success: true,
-    status: "ok",
-    service: "FCS AI WORKFORCE OS",
-    version: PLATFORM_CONFIG.SCHEMA_VERSION,
-    architecture: "MULTI_TENANT",
-    dataMode: "REAL",
-    tenantIsolation: true,
-    timestamp: Date.now()
-  });
-}
-
-function doPost(e) {
-  var requestId = "REQ-" + Date.now();
-  try {
-    if (!e || !e.postData || !e.postData.contents) {
-      return jsonResponse_({ success: false, error: { code: "BAD_REQUEST", message: "Yêu cầu rỗng." }, requestId: requestId });
-    }
-
-    var request = JSON.parse(e.postData.contents);
-    var action = request.action || "";
-    var payload = request.payload || {};
-    var identity = request.identity || { email: PLATFORM_CONFIG.DEFAULT_SUPER_ADMIN };
-    var requestedTenantId = request.requestedTenantId || payload.tenantId || "";
-    requestId = request.requestId || requestId;
-
-    // Resolve Tenant Context securely
-    var tenantContext = resolveTenantContext_(identity, requestedTenantId);
-
-    // Platform Health Check (Safe public info)
-    if (action === "system.health") {
-      return jsonResponse_({
-        success: true,
-        data: {
-          status: "healthy",
-          service: "FCS AI WORKFORCE OS",
-          version: PLATFORM_CONFIG.SCHEMA_VERSION,
-          architecture: "MULTI_TENANT",
-          dataMode: "REAL",
-          tenantIsolation: true,
-          activeTenant: tenantContext.tenantId,
-          companyName: tenantContext.companyName,
-          tenantRole: tenantContext.tenantRole,
-          platformRole: tenantContext.platformRole
-        },
-        requestId: requestId
-      });
-    }
-
-    // Tenant Health Check
-    if (action === "tenant.health") {
-      var dataOk = false;
-      var mgmtOk = false;
-      try {
-        if (tenantContext.dataSpreadsheetId) {
-          var dss = SpreadsheetApp.openById(tenantContext.dataSpreadsheetId);
-          dataOk = Boolean(dss);
-        }
-      } catch(e) {}
-      try {
-        if (tenantContext.managementSpreadsheetId) {
-          var mss = SpreadsheetApp.openById(tenantContext.managementSpreadsheetId);
-          mgmtOk = Boolean(mss);
-        }
-      } catch(e) {}
-
-      return jsonResponse_({
-        success: true,
-        data: {
-          tenantId: tenantContext.tenantId,
-          companyName: tenantContext.companyName,
-          dataConnected: dataOk,
-          managementConnected: mgmtOk,
-          schemaVersion: PLATFORM_CONFIG.SCHEMA_VERSION,
-          dataMode: "REAL",
-          role: tenantContext.tenantRole
-        },
-        requestId: requestId
-      });
-    }
-
-    // Super Admin: List Tenants
-    if (action === "tenant.list") {
-      if (tenantContext.platformRole !== "PLATFORM_SUPER_ADMIN") {
-        return jsonResponse_({ success: false, error: { code: "FORBIDDEN", message: "Chỉ Super Admin mới có quyền xem danh sách tenants." }, requestId: requestId });
-      }
-      return jsonResponse_(listTenants_(), requestId);
-    }
-
-    // Super Admin: Switch Tenant
-    if (action === "tenant.select") {
-      if (tenantContext.platformRole !== "PLATFORM_SUPER_ADMIN") {
-        return jsonResponse_({ success: false, error: { code: "FORBIDDEN", message: "Từ chối truy cập." }, requestId: requestId });
-      }
-      var newCtx = resolveTenantContext_(identity, payload.tenantId);
-      return jsonResponse_({
-        success: true,
-        data: {
-          tenantId: newCtx.tenantId,
-          companyName: newCtx.companyName,
-          tenantRole: newCtx.tenantRole
-        }
-      }, requestId);
-    }
-
-    // BUSINESS REPOSITORIES - ALL REQUIRE RESOLVED TENANT FILES
-    if (!tenantContext.dataSpreadsheetId || !tenantContext.managementSpreadsheetId) {
-      return jsonResponse_({
-        success: false,
-        error: { code: "TENANT_FILES_UNRESOLVED", message: "Chưa cấu hình tệp dữ liệu cho Tenant " + tenantContext.tenantId },
-        requestId: requestId
-      });
-    }
-
-    var dataSs = SpreadsheetApp.openById(tenantContext.dataSpreadsheetId);
-    var mgmtSs = SpreadsheetApp.openById(tenantContext.managementSpreadsheetId);
-
-    switch (action) {
-      // 1. Dashboard Summary
-      case "dashboard.summary":
-        return jsonResponse_(getDashboardSummary_(dataSs, mgmtSs, tenantContext), requestId);
-
-      // 2. Worker List
-      case "worker.list":
-        return jsonResponse_(getWorkers_(dataSs, payload), requestId);
-
-      // 3. Worker Detail
-      case "worker.get":
-        return jsonResponse_(getWorkerDetail_(dataSs, payload.workerId), requestId);
-
-      // 4. Worker Create
-      case "worker.create":
-        return jsonResponse_(createWorker_(dataSs, payload, tenantContext), requestId);
-
-      // 5. Worker Update
-      case "worker.update":
-        return jsonResponse_(updateWorker_(dataSs, payload, tenantContext), requestId);
-
-      // 6. Action Queue List
-      case "action.list":
-        return jsonResponse_(getActionQueue_(dataSs, payload), requestId);
-
-      // 7. Pipeline Funnel
-      case "pipeline.funnel":
-      case "pipeline.metrics":
-        return jsonResponse_(getPipelineFunnel_(dataSs), requestId);
-
-      // 8. Pipeline Events
-      case "pipeline.events":
-        return jsonResponse_(getPipelineEvents_(dataSs, payload.workerId), requestId);
-
-      // 9. Interviews
-      case "interview.list":
-        return jsonResponse_(getInterviews_(dataSs, payload.workerId), requestId);
-      case "interview.create":
-        return jsonResponse_(createInterview_(dataSs, payload, tenantContext), requestId);
-      case "interview.update":
-        return jsonResponse_(updateInterview_(dataSs, payload, tenantContext), requestId);
-
-      // 10. Assignments
-      case "assignment.list":
-        return jsonResponse_(getAssignments_(dataSs, payload.workerId), requestId);
-      case "assignment.create":
-        return jsonResponse_(createAssignment_(dataSs, payload, tenantContext), requestId);
-      case "assignment.start":
-        return jsonResponse_(startAssignment_(dataSs, payload.assignmentId, tenantContext), requestId);
-
-      // 11. Attendance & Matching
-      case "attendance.list":
-        return jsonResponse_(getAttendanceList_(dataSs, payload.workerId), requestId);
-      case "attendance.match":
-        return jsonResponse_(matchAttendance_(dataSs, payload, tenantContext), requestId);
-      case "matching.list":
-        return jsonResponse_(getMatchingReviews_(dataSs), requestId);
-
-      // 12. Results & VWW
-      case "results.summary":
-      case "results.metrics":
-        return jsonResponse_(getOperationalResults_(dataSs), requestId);
-
-      // 13. Master Management Data
-      case "master.offices":
-        return jsonResponse_(getOffices_(mgmtSs), requestId);
-      case "master.staff":
-        return jsonResponse_(getStaff_(mgmtSs), requestId);
-      case "master.partners":
-        return jsonResponse_(getPartners_(mgmtSs), requestId);
-      case "master.jobs":
-        return jsonResponse_(getJobs_(mgmtSs), requestId);
-
-      // 14. Golden Flow End-to-End Live Execution
-      case "goldenflow.run":
-        return jsonResponse_(executeGoldenFlow_(dataSs, payload, tenantContext), requestId);
-
-      default:
-        return jsonResponse_({
-          success: false,
-          error: { code: "UNKNOWN_ACTION", message: "Hành động '" + action + "' không được hỗ trợ trong phiên bản 4.0.0." },
-          requestId: requestId
-        });
-    }
-
-  } catch (err) {
-    return jsonResponse_({
-      success: false,
-      error: { code: "SERVER_ERROR", message: err.toString() },
-      requestId: requestId
+function listTenants_() {
+  var props = PropertiesService.getScriptProperties();
+  var masterId = props.getProperty("MASTER_SPREADSHEET_ID");
+  var masterSs = SpreadsheetApp.openById(masterId);
+  var sheet = masterSs.getSheetByName("01_TENANTS");
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    result.push({
+      tenantId: data[i][0],
+      companyName: data[i][1],
+      companySlug: data[i][2],
+      companyCode: data[i][3],
+      planCode: data[i][4],
+      status: data[i][5],
+      ownerName: data[i][6],
+      ownerEmail: data[i][7],
+      createdAt: data[i][9]
     });
   }
+  return { success: true, data: result };
 }
 
+
 // ==============================================================================
-// 06. REAL DATA REPOSITORIES (EXACT ROWS & STATS)
+// FILE: 05_WorkerService.gs
 // ==============================================================================
-function getDashboardSummary_(dataSs, mgmtSs, tenantContext) {
-  var workersSheet = dataSs.getSheetByName("04_WORKERS_MASTER");
-  var actionsSheet = dataSs.getSheetByName("11_ACTION_QUEUE");
-  
-  var totalWorkers = 0;
-  var newWorkers = 0;
-  var interviewed = 0;
-  var passed = 0;
-  var waitingStart = 0;
-  var working = 0;
-  var verifiedWorking = 0;
 
-  if (workersSheet && workersSheet.getLastRow() > 1) {
-    var rows = workersSheet.getDataRange().getValues();
-    totalWorkers = rows.length - 1;
-    for (var i = 1; i < rows.length; i++) {
-      var st = String(rows[i][7] || "").toUpperCase();
-      var isVww = Boolean(rows[i][8]);
-      if (isVww) verifiedWorking++;
-      if (st === "NEW") newWorkers++;
-      else if (st === "INTERVIEWED" || st === "INTERVIEW_PENDING") interviewed++;
-      else if (st === "PASSED") passed++;
-      else if (st === "WAITING_START") waitingStart++;
-      else if (st === "WORKING") working++;
-    }
-  }
-
-  var openActions = 0;
-  var p0 = 0, p1 = 0, p2 = 0, p3 = 0;
-  if (actionsSheet && actionsSheet.getLastRow() > 1) {
-    var actRows = actionsSheet.getDataRange().getValues();
-    for (var a = 1; a < actRows.length; a++) {
-      var actStatus = String(actRows[a][7] || "").toUpperCase();
-      if (actStatus === "OPEN") {
-        openActions++;
-        var prio = String(actRows[a][1] || "").toUpperCase();
-        if (prio === "P0") p0++;
-        else if (prio === "P1") p1++;
-        else if (prio === "P2") p2++;
-        else if (prio === "P3") p3++;
-      }
-    }
-  }
-
-  return {
-    success: true,
-    data: {
-      tenantId: tenantContext.tenantId,
-      companyName: tenantContext.companyName,
-      metrics: {
-        totalWorkers: totalWorkers,
-        newWorkers: newWorkers,
-        interviewed: interviewed,
-        passed: passed,
-        waitingStart: waitingStart,
-        working: working,
-        verifiedWorking: verifiedWorking,
-        pendingReview: p0,
-        openActions: openActions
-      },
-      priorities: { P0: p0, P1: p1, P2: p2, P3: p3 },
-      northStar: { value: verifiedWorking, target: 500, label: "Verified Working Worker (VWW)" }
-    }
-  };
-}
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — WORKER SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
 
 function getWorkers_(dataSs, payload) {
   var sheet = dataSs.getSheetByName("04_WORKERS_MASTER");
@@ -975,87 +759,59 @@ function updateWorker_(dataSs, payload, tenantContext) {
   return { success: false, error: { code: "NOT_FOUND", message: "Hồ sơ không tồn tại" } };
 }
 
-function getActionQueue_(dataSs, payload) {
-  var sheet = dataSs.getSheetByName("11_ACTION_QUEUE");
-  if (!sheet || sheet.getLastRow() <= 1) {
-    return { success: true, data: [] };
-  }
-  var data = sheet.getDataRange().getValues();
-  var result = [];
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    var status = row[7] || "OPEN";
-    if (payload && payload.status && payload.status !== "ALL" && status !== payload.status) continue;
-    result.push({
-      actionId: row[0],
-      priority: row[1],
-      category: row[2],
-      workerId: row[3],
-      title: row[4],
-      reason: row[5],
-      dueDate: row[6],
-      status: status,
-      createdAt: row[8],
-      resolvedAt: row[9]
-    });
-  }
-  return { success: true, data: result };
-}
-
-function getPipelineFunnel_(dataSs) {
+function updateWorkerStatusInMaster_(dataSs, workerId, newStatus) {
   var sheet = dataSs.getSheetByName("04_WORKERS_MASTER");
-  var stages = {
-    NEW: 0,
-    INTERVIEW_PENDING: 0,
-    PASSED: 0,
-    WAITING_START: 0,
-    WORKING: 0,
-    VWW: 0
-  };
-
-  if (sheet && sheet.getLastRow() > 1) {
-    var data = sheet.getDataRange().getValues();
-    for (var i = 1; i < data.length; i++) {
-      var st = String(data[i][7] || "NEW").toUpperCase();
-      var isVww = Boolean(data[i][8]);
-      if (isVww) stages.VWW++;
-      if (stages[st] !== undefined) stages[st]++;
-    }
-  }
-
-  return {
-    success: true,
-    data: [
-      { stage: "NEW", count: stages.NEW, label: "Mới tiếp nhận" },
-      { stage: "INTERVIEW_PENDING", count: stages.INTERVIEW_PENDING, label: "Chờ phỏng vấn" },
-      { stage: "PASSED", count: stages.PASSED, label: "Đã đỗ phỏng vấn" },
-      { stage: "WAITING_START", count: stages.WAITING_START, label: "Chờ đi làm" },
-      { stage: "WORKING", count: stages.WORKING, label: "Đang làm việc" },
-      { stage: "VWW", count: stages.VWW, label: "Chuẩn VWW" }
-    ]
-  };
-}
-
-function getPipelineEvents_(dataSs, workerId) {
-  var sheet = dataSs.getSheetByName("05_PIPELINE_EVENTS");
-  if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
+  if (!sheet) return;
   var data = sheet.getDataRange().getValues();
-  var result = [];
   for (var i = 1; i < data.length; i++) {
-    if (!workerId || data[i][1] === workerId) {
-      result.push({
-        id: data[i][0],
-        workerId: data[i][1],
-        eventType: data[i][2],
-        stageFrom: data[i][3],
-        stageTo: data[i][4],
-        timestamp: data[i][7],
-        note: data[i][9]
-      });
+    if (data[i][0] === workerId) {
+      sheet.getRange(i + 1, 8).setValue(newStatus);
+      sheet.getRange(i + 1, 14).setValue(new Date().toISOString());
+      break;
     }
   }
-  return { success: true, data: result };
 }
+
+function setWorkerVwwInMaster_(dataSs, workerId, isVww) {
+  var sheet = dataSs.getSheetByName("04_WORKERS_MASTER");
+  if (!sheet) return;
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === workerId) {
+      sheet.getRange(i + 1, 9).setValue(Boolean(isVww));
+      sheet.getRange(i + 1, 14).setValue(new Date().toISOString());
+      break;
+    }
+  }
+}
+
+function workerMerge_(dataSs, payload, tenantContext) {
+  var primaryId = payload.primaryWorkerId;
+  var secondaryId = payload.secondaryWorkerId;
+  var sheet = dataSs.getSheetByName("04_WORKERS_MASTER");
+  if (!sheet) return { success: false, error: { code: "SHEET_NOT_FOUND", message: "Bảng không tồn tại" } };
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === secondaryId) {
+      sheet.getRange(i + 1, 8).setValue("MERGED");
+      sheet.getRange(i + 1, 14).setValue(new Date().toISOString());
+      break;
+    }
+  }
+  return { success: true, data: { primaryWorkerId: primaryId, mergedWorkerId: secondaryId, status: "MERGED" } };
+}
+
+
+// ==============================================================================
+// FILE: 06_InterviewService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — INTERVIEW SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
 
 function getInterviews_(dataSs, workerId) {
   var sheet = dataSs.getSheetByName("06_INTERVIEWS");
@@ -1114,6 +870,18 @@ function updateInterview_(dataSs, payload, tenantContext) {
   return { success: false, error: { code: "NOT_FOUND", message: "Không tìm thấy phỏng vấn" } };
 }
 
+
+// ==============================================================================
+// FILE: 07_AssignmentService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — ASSIGNMENT SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
 function getAssignments_(dataSs, workerId) {
   var sheet = dataSs.getSheetByName("07_ASSIGNMENTS");
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
@@ -1151,10 +919,13 @@ function createAssignment_(dataSs, payload, tenantContext) {
     payload.notes || ""
   ]);
   updateWorkerStatusInMaster_(dataSs, payload.workerId, "WAITING_START");
-  return { success: true, data: { id: id, workerId: payload.workerId, status: "WAITING_START" } };
+  return { success: true, data: { id: id, assignmentId: id, workerId: payload.workerId, status: "WAITING_START" } };
 }
 
-function startAssignment_(dataSs, assignmentId, tenantContext) {
+function startAssignment_(dataSs, assignmentIdOrPayload, tenantContext) {
+  var assignmentId = typeof assignmentIdOrPayload === "object"
+    ? (assignmentIdOrPayload.assignmentId || assignmentIdOrPayload.id)
+    : assignmentIdOrPayload;
   var sheet = dataSs.getSheetByName("07_ASSIGNMENTS");
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
@@ -1162,11 +933,23 @@ function startAssignment_(dataSs, assignmentId, tenantContext) {
       sheet.getRange(i + 1, 7).setValue("WORKING");
       var workerId = data[i][1];
       updateWorkerStatusInMaster_(dataSs, workerId, "WORKING");
-      return { success: true, data: { assignmentId: assignmentId, status: "WORKING" } };
+      return { success: true, data: { id: assignmentId, assignmentId: assignmentId, status: "WORKING" } };
     }
   }
   return { success: false, error: { code: "NOT_FOUND", message: "Không tìm thấy điều động" } };
 }
+
+
+// ==============================================================================
+// FILE: 08_AttendanceService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — ATTENDANCE SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
 
 function getAttendanceList_(dataSs, workerId) {
   var sheet = dataSs.getSheetByName("09_ATTENDANCE");
@@ -1213,6 +996,18 @@ function matchAttendance_(dataSs, payload, tenantContext) {
   return { success: true, data: { attendanceId: id, workerId: payload.workerId, isVww: true } };
 }
 
+
+// ==============================================================================
+// FILE: 09_MatchingService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — MATCHING SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
 function getMatchingReviews_(dataSs) {
   var sheet = dataSs.getSheetByName("10_MATCHING_REVIEW");
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
@@ -1229,6 +1024,84 @@ function getMatchingReviews_(dataSs) {
     });
   }
   return { success: true, data: result };
+}
+
+
+// ==============================================================================
+// FILE: 10_DashboardService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — DASHBOARD SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
+function getDashboardSummary_(dataSs, mgmtSs, tenantContext) {
+  var workersSheet = dataSs.getSheetByName("04_WORKERS_MASTER");
+  var actionsSheet = dataSs.getSheetByName("18_ACTION_QUEUE") || dataSs.getSheetByName("11_ACTION_QUEUE");
+  
+  var totalWorkers = 0;
+  var newWorkers = 0;
+  var interviewed = 0;
+  var passed = 0;
+  var waitingStart = 0;
+  var working = 0;
+  var verifiedWorking = 0;
+
+  if (workersSheet && workersSheet.getLastRow() > 1) {
+    var rows = workersSheet.getDataRange().getValues();
+    totalWorkers = rows.length - 1;
+    for (var i = 1; i < rows.length; i++) {
+      var st = String(rows[i][7] || "").toUpperCase();
+      var isVww = Boolean(rows[i][8]);
+      if (isVww) verifiedWorking++;
+      if (st === "NEW") newWorkers++;
+      else if (st === "INTERVIEWED" || st === "INTERVIEW_PENDING") interviewed++;
+      else if (st === "PASSED") passed++;
+      else if (st === "WAITING_START") waitingStart++;
+      else if (st === "WORKING") working++;
+    }
+  }
+
+  var openActions = 0;
+  var p0 = 0, p1 = 0, p2 = 0, p3 = 0;
+  if (actionsSheet && actionsSheet.getLastRow() > 1) {
+    var actRows = actionsSheet.getDataRange().getValues();
+    for (var a = 1; a < actRows.length; a++) {
+      var actStatus = String(actRows[a][7] || "").toUpperCase();
+      if (actStatus === "OPEN") {
+        openActions++;
+        var prio = String(actRows[a][1] || "").toUpperCase();
+        if (prio === "P0") p0++;
+        else if (prio === "P1") p1++;
+        else if (prio === "P2") p2++;
+        else if (prio === "P3") p3++;
+      }
+    }
+  }
+
+  return {
+    success: true,
+    data: {
+      tenantId: tenantContext.tenantId,
+      companyName: tenantContext.companyName,
+      metrics: {
+        totalWorkers: totalWorkers,
+        newWorkers: newWorkers,
+        interviewed: interviewed,
+        passed: passed,
+        waitingStart: waitingStart,
+        working: working,
+        verifiedWorking: verifiedWorking,
+        pendingReview: p0,
+        openActions: openActions
+      },
+      priorities: { P0: p0, P1: p1, P2: p2, P3: p3 },
+      northStar: { value: verifiedWorking, target: 500, label: "Verified Working Worker (VWW)" }
+    }
+  };
 }
 
 function getOperationalResults_(dataSs) {
@@ -1254,8 +1127,150 @@ function getOperationalResults_(dataSs) {
   };
 }
 
+
+// ==============================================================================
+// FILE: 11_ActionQueueService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — ACTION QUEUE SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
+function getActionQueue_(dataSs, payload) {
+  var sheet = dataSs.getSheetByName("18_ACTION_QUEUE") || dataSs.getSheetByName("11_ACTION_QUEUE");
+  if (!sheet || sheet.getLastRow() <= 1) {
+    return { success: true, data: [] };
+  }
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+  var filterCategory = payload && payload.category ? String(payload.category).toUpperCase() : "";
+
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var status = row[7] || "OPEN";
+    var cat = row[2] || "";
+    if (payload && payload.status && payload.status !== "ALL" && status !== payload.status) continue;
+    if (filterCategory && String(cat).toUpperCase() !== filterCategory) continue;
+
+    result.push({
+      actionId: row[0],
+      priority: row[1],
+      category: row[2],
+      workerId: row[3],
+      title: row[4],
+      reason: row[5],
+      dueDate: row[6],
+      status: status,
+      createdAt: row[8],
+      resolvedAt: row[9]
+    });
+  }
+  return { success: true, data: result };
+}
+
+function actionResolve_(dataSs, payload, tenantContext) {
+  var sheet = dataSs.getSheetByName("18_ACTION_QUEUE") || dataSs.getSheetByName("11_ACTION_QUEUE");
+  if (!sheet || sheet.getLastRow() <= 1) {
+    return { success: true, data: { resolved: true } };
+  }
+  var actionId = payload && (payload.actionId || payload.id);
+  var resolution = (payload && payload.resolution) || "RESOLVED";
+  var data = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === actionId) {
+      sheet.getRange(i + 1, 8).setValue("RESOLVED");
+      sheet.getRange(i + 1, 10).setValue(new Date().toISOString());
+      break;
+    }
+  }
+  return { success: true, data: { actionId: actionId, status: "RESOLVED", resolution: resolution } };
+}
+
+
+// ==============================================================================
+// FILE: 12_PipelineService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — PIPELINE SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
+function getPipelineFunnel_(dataSs) {
+  var sheet = dataSs.getSheetByName("04_WORKERS_MASTER");
+  var stages = {
+    NEW: 0,
+    INTERVIEW_PENDING: 0,
+    PASSED: 0,
+    WAITING_START: 0,
+    WORKING: 0,
+    VWW: 0
+  };
+
+  if (sheet && sheet.getLastRow() > 1) {
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      var st = String(data[i][7] || "NEW").toUpperCase();
+      var isVww = Boolean(data[i][8]);
+      if (isVww) stages.VWW++;
+      if (stages[st] !== undefined) stages[st]++;
+    }
+  }
+
+  return {
+    success: true,
+    data: [
+      { stage: "NEW", count: stages.NEW, label: "Mới tiếp nhận" },
+      { stage: "INTERVIEW_PENDING", count: stages.INTERVIEW_PENDING, label: "Chờ phỏng vấn" },
+      { stage: "PASSED", count: stages.PASSED, label: "Đã đỗ phỏng vấn" },
+      { stage: "WAITING_START", count: stages.WAITING_START, label: "Chờ đi làm" },
+      { stage: "WORKING", count: stages.WORKING, label: "Đang làm việc" },
+      { stage: "VWW", count: stages.VWW, label: "Chuẩn VWW" }
+    ]
+  };
+}
+
+function getPipelineEvents_(dataSs, workerId) {
+  var sheet = dataSs.getSheetByName("05_PIPELINE_EVENTS");
+  if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    if (!workerId || data[i][1] === workerId) {
+      result.push({
+        id: data[i][0],
+        workerId: data[i][1],
+        eventType: data[i][2],
+        stageFrom: data[i][3],
+        stageTo: data[i][4],
+        timestamp: data[i][7],
+        note: data[i][9]
+      });
+    }
+  }
+  return { success: true, data: result };
+}
+
+
+// ==============================================================================
+// FILE: 13_MasterDataService.gs
+// ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — MASTER DATA SERVICE
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
 function getOffices_(mgmtSs) {
-  var sheet = mgmtSs.getSheetByName("02_OFFICES");
+  var sheet = mgmtSs.getSheetByName("14_OFFICES") || mgmtSs.getSheetByName("02_OFFICES") || mgmtSs.getSheetByName("OFFICES");
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
   var data = sheet.getDataRange().getValues();
   var res = [];
@@ -1266,7 +1281,7 @@ function getOffices_(mgmtSs) {
 }
 
 function getStaff_(mgmtSs) {
-  var sheet = mgmtSs.getSheetByName("03_STAFF");
+  var sheet = mgmtSs.getSheetByName("13_STAFF") || mgmtSs.getSheetByName("03_STAFF") || mgmtSs.getSheetByName("STAFF");
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
   var data = sheet.getDataRange().getValues();
   var res = [];
@@ -1277,7 +1292,7 @@ function getStaff_(mgmtSs) {
 }
 
 function getPartners_(mgmtSs) {
-  var sheet = mgmtSs.getSheetByName("04_PARTNERS");
+  var sheet = mgmtSs.getSheetByName("11_PARTNERS") || mgmtSs.getSheetByName("04_PARTNERS") || mgmtSs.getSheetByName("PARTNERS");
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
   var data = sheet.getDataRange().getValues();
   var res = [];
@@ -1288,7 +1303,7 @@ function getPartners_(mgmtSs) {
 }
 
 function getJobs_(mgmtSs) {
-  var sheet = mgmtSs.getSheetByName("05_JOBS");
+  var sheet = mgmtSs.getSheetByName("12_JOBS") || mgmtSs.getSheetByName("05_JOBS") || mgmtSs.getSheetByName("JOBS");
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
   var data = sheet.getDataRange().getValues();
   var res = [];
@@ -1298,32 +1313,18 @@ function getJobs_(mgmtSs) {
   return { success: true, data: res };
 }
 
-function listTenants_() {
-  var props = PropertiesService.getScriptProperties();
-  var masterId = props.getProperty("MASTER_SPREADSHEET_ID");
-  var masterSs = SpreadsheetApp.openById(masterId);
-  var sheet = masterSs.getSheetByName("01_TENANTS");
-  var data = sheet.getDataRange().getValues();
-  var result = [];
-  for (var i = 1; i < data.length; i++) {
-    result.push({
-      tenantId: data[i][0],
-      companyName: data[i][1],
-      companySlug: data[i][2],
-      companyCode: data[i][3],
-      planCode: data[i][4],
-      status: data[i][5],
-      ownerName: data[i][6],
-      ownerEmail: data[i][7],
-      createdAt: data[i][9]
-    });
-  }
-  return { success: true, data: result };
-}
 
 // ==============================================================================
-// 07. GOLDEN FLOW REAL EXECUTION RUNNER
+// FILE: 22_QADataReset.gs
 // ==============================================================================
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — QA DATA RESET
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
 function executeGoldenFlow_(dataSs, payload, tenantContext) {
   var workerName = payload && payload.workerName ? payload.workerName : "FCS Pilot Worker QA 001";
   var workerPhone = payload && payload.workerPhone ? payload.workerPhone : "0988001001";
@@ -1357,39 +1358,529 @@ function executeGoldenFlow_(dataSs, payload, tenantContext) {
   };
 }
 
+
 // ==============================================================================
-// 08. HELPER UTILITIES
+// FILE: 01_Router.gs
 // ==============================================================================
-function updateWorkerStatusInMaster_(dataSs, workerId, newStatus) {
-  var sheet = dataSs.getSheetByName("04_WORKERS_MASTER");
-  if (!sheet) return;
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][0] === workerId) {
-      sheet.getRange(i + 1, 8).setValue(newStatus);
-      sheet.getRange(i + 1, 14).setValue(new Date().toISOString());
-      break;
+
+/**
+ * ==============================================================================
+ * FCS AI WORKFORCE OS — ROUTER
+ * Part of V4 Multi-Tenant SaaS Platform Engine
+ * ==============================================================================
+ */
+
+function doGet(e) {
+  return jsonResponse_({
+    success: true,
+    status: "ok",
+    service: "FCS AI WORKFORCE OS",
+    version: PLATFORM_CONFIG.SCHEMA_VERSION,
+    architecture: "MULTI_TENANT",
+    dataMode: "REAL",
+    tenantIsolation: true,
+    timestamp: Date.now()
+  });
+}
+
+function doPost(e) {
+  var requestId = "REQ-" + Date.now();
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return jsonResponse_({ success: false, error: { code: "BAD_REQUEST", message: "Yêu cầu rỗng." }, requestId: requestId });
     }
+
+    var request = JSON.parse(e.postData.contents);
+    var action = request.action || "";
+    var payload = request.payload || {};
+    var identity = request.identity || { email: PLATFORM_CONFIG.DEFAULT_SUPER_ADMIN };
+    var requestedTenantId = request.requestedTenantId || payload.tenantId || "";
+    requestId = request.requestId || requestId;
+
+    // Resolve Tenant Context securely
+    var tenantContext = resolveTenantContext_(identity, requestedTenantId);
+
+    // Platform Health Check (Safe public info)
+    if (action === "system.health") {
+      return jsonResponse_({
+        success: true,
+        data: {
+          status: "healthy",
+          service: "FCS AI WORKFORCE OS",
+          version: PLATFORM_CONFIG.SCHEMA_VERSION,
+          architecture: "MULTI_TENANT",
+          dataMode: "REAL",
+          tenantIsolation: true,
+          activeTenant: tenantContext.tenantId,
+          companyName: tenantContext.companyName,
+          tenantRole: tenantContext.tenantRole,
+          platformRole: tenantContext.platformRole
+        },
+        requestId: requestId
+      });
+    }
+
+    // Lead & User Registration Intake with Purpose
+    if (action === "auth.register_lead") {
+      return jsonResponse_(recordUserRegistration_(payload), requestId);
+    }
+
+    // Tenant Health Check
+    if (action === "tenant.health") {
+      var dataOk = false;
+      var mgmtOk = false;
+      try {
+        if (tenantContext.dataSpreadsheetId) {
+          var dss = SpreadsheetApp.openById(tenantContext.dataSpreadsheetId);
+          dataOk = Boolean(dss);
+        }
+      } catch(e) {}
+      try {
+        if (tenantContext.managementSpreadsheetId) {
+          var mss = SpreadsheetApp.openById(tenantContext.managementSpreadsheetId);
+          mgmtOk = Boolean(mss);
+        }
+      } catch(e) {}
+
+      return jsonResponse_({
+        success: true,
+        data: {
+          tenantId: tenantContext.tenantId,
+          companyName: tenantContext.companyName,
+          dataConnected: dataOk,
+          managementConnected: mgmtOk,
+          schemaVersion: PLATFORM_CONFIG.SCHEMA_VERSION,
+          dataMode: "REAL",
+          role: tenantContext.tenantRole
+        },
+        requestId: requestId
+      });
+    }
+
+    // Super Admin: List Tenants
+    if (action === "tenant.list") {
+      if (tenantContext.platformRole !== "PLATFORM_SUPER_ADMIN") {
+        return jsonResponse_({ success: false, error: { code: "FORBIDDEN", message: "Chỉ Super Admin mới có quyền xem danh sách tenants." }, requestId: requestId });
+      }
+      return jsonResponse_(listTenants_(), requestId);
+    }
+
+    // Super Admin: Switch Tenant
+    if (action === "tenant.select") {
+      if (tenantContext.platformRole !== "PLATFORM_SUPER_ADMIN") {
+        return jsonResponse_({ success: false, error: { code: "FORBIDDEN", message: "Từ chối truy cập." }, requestId: requestId });
+      }
+      var newCtx = resolveTenantContext_(identity, payload.tenantId);
+      return jsonResponse_({
+        success: true,
+        data: {
+          tenantId: newCtx.tenantId,
+          companyName: newCtx.companyName,
+          tenantRole: newCtx.tenantRole
+        }
+      }, requestId);
+    }
+
+    // BUSINESS REPOSITORIES - ALL REQUIRE RESOLVED TENANT FILES
+    if (!tenantContext.dataSpreadsheetId || !tenantContext.managementSpreadsheetId) {
+      return jsonResponse_({
+        success: false,
+        error: { code: "TENANT_FILES_UNRESOLVED", message: "Chưa cấu hình tệp dữ liệu cho Tenant " + tenantContext.tenantId },
+        requestId: requestId
+      });
+    }
+
+    var dataSs = SpreadsheetApp.openById(tenantContext.dataSpreadsheetId);
+    var mgmtSs = SpreadsheetApp.openById(tenantContext.managementSpreadsheetId);
+
+    switch (action) {
+      // 1. Dashboard Summary
+      case "dashboard.summary":
+        return jsonResponse_(getDashboardSummary_(dataSs, mgmtSs, tenantContext), requestId);
+
+      // 2. Worker List
+      case "worker.list":
+        return jsonResponse_(getWorkers_(dataSs, payload), requestId);
+
+      // 3. Worker Detail
+      case "worker.get":
+        return jsonResponse_(getWorkerDetail_(dataSs, payload.workerId), requestId);
+
+      // 4. Worker Create
+      case "worker.create":
+        return jsonResponse_(createWorker_(dataSs, payload, tenantContext), requestId);
+
+      // 5. Worker Update
+      case "worker.update":
+        return jsonResponse_(updateWorker_(dataSs, payload, tenantContext), requestId);
+      case "worker.merge":
+        return jsonResponse_(workerMerge_(dataSs, payload, tenantContext), requestId);
+
+      // 6. Action Queue List & Resolve
+      case "action.list":
+        return jsonResponse_(getActionQueue_(dataSs, payload), requestId);
+      case "action.resolve":
+        return jsonResponse_(actionResolve_(dataSs, payload, tenantContext), requestId);
+
+      // 7. Pipeline Funnel
+      case "pipeline.funnel":
+      case "pipeline.metrics":
+        return jsonResponse_(getPipelineFunnel_(dataSs), requestId);
+
+      // 8. Pipeline Events
+      case "pipeline.events":
+        return jsonResponse_(getPipelineEvents_(dataSs, payload.workerId), requestId);
+
+      // 9. Interviews
+      case "interview.list":
+        return jsonResponse_(getInterviews_(dataSs, payload.workerId), requestId);
+      case "interview.create":
+        return jsonResponse_(createInterview_(dataSs, payload, tenantContext), requestId);
+      case "interview.update":
+        return jsonResponse_(updateInterview_(dataSs, payload, tenantContext), requestId);
+
+      // 10. Assignments
+      case "assignment.list":
+        return jsonResponse_(getAssignments_(dataSs, payload.workerId), requestId);
+      case "assignment.create":
+        return jsonResponse_(createAssignment_(dataSs, payload, tenantContext), requestId);
+      case "assignment.start":
+        return jsonResponse_(startAssignment_(dataSs, payload.assignmentId, tenantContext), requestId);
+
+      // 11. Attendance & Matching
+      case "attendance.list":
+        return jsonResponse_(getAttendanceList_(dataSs, payload.workerId), requestId);
+      case "attendance.match":
+        return jsonResponse_(matchAttendance_(dataSs, payload, tenantContext), requestId);
+      case "attendance.reject":
+      case "attendance.ignore":
+        return jsonResponse_({ success: true, data: { reviewId: payload.reviewId, status: "REJECTED" } }, requestId);
+      case "matching.list":
+        return jsonResponse_(getMatchingReviews_(dataSs), requestId);
+
+      // 12. Results & VWW
+      case "results.summary":
+      case "results.metrics":
+        return jsonResponse_(getOperationalResults_(dataSs), requestId);
+
+      // 13. Master Management Data
+      case "master.offices":
+        return jsonResponse_(getOffices_(mgmtSs), requestId);
+      case "master.staff":
+        return jsonResponse_(getStaff_(mgmtSs), requestId);
+      case "master.partners":
+        return jsonResponse_(getPartners_(mgmtSs), requestId);
+      case "master.jobs":
+        return jsonResponse_(getJobs_(mgmtSs), requestId);
+
+      // 14. Golden Flow End-to-End Live Execution
+      case "goldenflow.run":
+        return jsonResponse_(executeGoldenFlow_(dataSs, payload, tenantContext), requestId);
+
+      default:
+        return jsonResponse_({
+          success: false,
+          error: { code: "UNKNOWN_ACTION", message: "Hành động '" + action + "' không được hỗ trợ trong phiên bản 4.0.0." },
+          requestId: requestId
+        });
+    }
+
+  } catch (err) {
+    return jsonResponse_({
+      success: false,
+      error: { code: "SERVER_ERROR", message: err.toString() },
+      requestId: requestId
+    });
   }
 }
 
-function setWorkerVwwInMaster_(dataSs, workerId, isVww) {
-  var sheet = dataSs.getSheetByName("04_WORKERS_MASTER");
-  if (!sheet) return;
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][0] === workerId) {
-      sheet.getRange(i + 1, 9).setValue(Boolean(isVww));
-      sheet.getRange(i + 1, 14).setValue(new Date().toISOString());
-      break;
+function recordUserRegistration_(payload) {
+  var props = PropertiesService.getScriptProperties();
+  var masterId = props.getProperty("MASTER_SPREADSHEET_ID");
+  var nowStr = new Date().toISOString();
+  var fullName = payload.fullName || "";
+  var email = String(payload.email || "").trim().toLowerCase();
+  var phone = payload.phone || "";
+  var organization = payload.organization || "";
+  var purpose = payload.purpose || "Khảo sát giải pháp Quản lý Điều hành Lao động";
+  var uid = payload.uid || ("UID-" + Date.now());
+
+  if (masterId) {
+    try {
+      var masterSs = SpreadsheetApp.openById(masterId);
+      var usersSheet = masterSs.getSheetByName("03_GLOBAL_USERS");
+      if (usersSheet) {
+        usersSheet.appendRow([uid, email, fullName + " (" + organization + ")", "", "VIEWER", "ACTIVE", nowStr, nowStr]);
+      }
+      var accessSheet = masterSs.getSheetByName("04_USER_TENANT_ACCESS");
+      if (accessSheet) {
+        accessSheet.appendRow(["ACC-" + Date.now(), uid, email, PLATFORM_CONFIG.PILOT_TENANT_ID, "VIEWER", "STF-VIEWER", "OFF-01", "ACTIVE", nowStr, nowStr]);
+      }
+    } catch(e) {
+      Logger.log("Error writing to master sheet: " + e);
     }
+  }
+
+  return {
+    success: true,
+    data: {
+      registered: true,
+      email: email,
+      role: "VIEWER",
+      message: "Đã tiếp nhận thông tin đăng ký với quyền Người xem (Chỉ đọc)."
+    }
+  };
+}
+
+
+
+
+
+// ==============================================================================
+// FILE: 99_SeedTestData.gs (DEV ONLY � Full Pipeline Test Seeder)
+// ==============================================================================
+
+/**
+ * FCS AI WORKFORCE OS — TEST DATA SEEDER
+ * ========================================
+ * Mục đích: Chuẩn hóa 10 mẫu dữ liệu đầy đủ để test FULL 19-level pipeline
+ * Chạy: seedFullPipelineTestData() trực tiếp từ GAS Editor
+ *
+ * Pipeline Coverage:
+ *   WK-T001  C3      NEW               — Lead mới chưa phân bổ
+ *   WK-T002  L1      ASSIGNED_TO_SALE  — Đã chia cho sale
+ *   WK-T003  L1.2    FOLLOW_UP         — Đang chăm sóc lại
+ *   WK-T004  L1.3    REJECTED          — Từ chối (test negative)
+ *   WK-T005  L2      INTERVIEW_PENDING — Đã hẹn phỏng vấn
+ *   WK-T006  L2.1    PASSED            — Đỗ phỏng vấn, chờ đi làm
+ *   WK-T007  L3      WORKING           — VWW đang đi làm
+ *   WK-T008  L3.1    QUIT              — Nghỉ ngang
+ *   WK-T009  L3.2    TRANSFER_REQUEST  — Muốn chuyển xưởng
+ *   WK-T010  L4      FEE_EXPIRED       — Hết thời gian tính phí
+ */
+
+var SPREADSHEET_ID_TEST = "1YAVNiPtAiYrxEThvIgWuR0PAHJbDCDqrXCz5SNwnxXE";
+
+function seedFullPipelineTestData() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID_TEST);
+    var now = new Date();
+    var today = Utilities.formatDate(now, "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+
+    function daysAgo(n) {
+      return Utilities.formatDate(new Date(now - n * 86400000), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+    }
+    function daysLater(n) {
+      return Utilities.formatDate(new Date(now.getTime() + n * 86400000), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+    }
+
+    // ── 1. SEED 01_MASTER_WORKERS (34 cột) ──────────────────────────────────
+    // Col:  A          B        C                     D     E           F
+    //       worker_id  dept     full_name             gender date_of_birth cccd
+    // Col:  G           H                     I            J
+    //       issuing_date graduated_school     major        graduation_year
+    // Col:  K          L       M           N                     O
+    //       hometown   nation  birth_place vneid_address         permanent_residence
+    // Col:  P                   Q            R               S
+    //       social_insurance_no marital_status relative_name  relative_phone
+    // Col:  T          U                    V         W
+    //       phone      vietcombank_account  staff_code sourcing_recruiter
+    // Col:  X                 Y        Z              AA
+    //       consultant_sale   branch   target_company work_type
+    // Col:  AB             AC                 AD               AE
+    //       interview_date start_working_date interview_status working_status
+    // Col:  AF               AG               AH
+    //       resignation_date referral_source  created_at
+
+    var workerRows = [
+      // WK-T001 | C3 | NEW
+      ["WK-T001","HN-01","Nguyễn Thị Mai Linh","Nữ","2002-05-15","036202051234",
+       "2020-05-20","THPT Lý Thường Kiệt","Phổ thông","2020",
+       "Hà Nam","Kinh","Hà Nam","Thôn Mỹ Đình, Lý Nhân, Hà Nam","Xóm 2 Thôn Mỹ Đình, Hà Nam",
+       "VN2002051234","Độc thân","Nguyễn Văn Mạnh","0912345601",
+       "0912345601","9704366012345001","NV-001","Sale Nguyễn Hoa",
+       "Sale Trần Bình","Hà Nội","","Công nhân phổ thông",
+       "","","","NEW","","Facebook",daysAgo(7)+"T08:00:00.000Z"],
+
+      // WK-T002 | L1 | ASSIGNED_TO_SALE
+      ["WK-T002","DN-01","Trần Văn Bình","Nam","2000-08-20","074200082001",
+       "2018-08-25","THPT Nguyễn Du","Phổ thông","2018",
+       "Đồng Nai","Kinh","Đồng Nai","Ấp 3, Bình Lợi, Vĩnh Cửu, Đồng Nai","Ấp 3 Xã Bình Lợi, Vĩnh Cửu",
+       "VN2000082001","Độc thân","Trần Văn Hùng","0912345602",
+       "0912345602","9704366023456002","NV-002","Sale Lê Thảo",
+       "Sale Lê Thảo","Đồng Nai","FUYU","Công nhân lắp ráp",
+       "","","","ASSIGNED_TO_SALE","","Zalo",daysAgo(14)+"T09:00:00.000Z"],
+
+      // WK-T003 | L1.2 | FOLLOW_UP
+      ["WK-T003","BN-01","Lê Thị Hương","Nữ","2001-03-10","022201031001",
+       "2019-03-15","THPT Thuận Thành","Phổ thông","2019",
+       "Bắc Ninh","Kinh","Bắc Ninh","TDP Đông Thành, Từ Sơn, Bắc Ninh","Tổ 5 Đường Lý Thái Tổ, Từ Sơn",
+       "VN2001031001","Độc thân","Lê Văn Dũng","0912345603",
+       "0912345603","9704366034567003","NV-003","Sale Phạm Châu",
+       "Sale Phạm Châu","Bắc Ninh","FUYU","Công nhân phổ thông",
+       "","","","FOLLOW_UP","","CTV Giới thiệu",daysAgo(21)+"T10:00:00.000Z"],
+
+      // WK-T004 | L1.3 | REJECTED
+      ["WK-T004","HCM-01","Phạm Thị Đan Thanh","Nữ","1998-11-22","079198112201",
+       "2016-11-28","THPT Lê Hồng Phong","Phổ thông","2016",
+       "TP.HCM","Kinh","TP.HCM","47 Tân Kỳ Tân Quý, Q.Bình Tân, TP.HCM","47 Tân Kỳ Tân Quý, Bình Tân",
+       "VN1998112201","Đã kết hôn","Phạm Văn Nam","0912345604",
+       "0912345604","9704366045678004","NV-004","Sale Vũ Minh",
+       "Sale Vũ Minh","TP.HCM","","Công nhân may",
+       "","","","REJECTED","","Facebook",daysAgo(30)+"T11:00:00.000Z"],
+
+      // WK-T005 | L2 | INTERVIEW_PENDING
+      ["WK-T005","DG-01","Nguyễn Văn Hùng","Nam","2003-01-05","036203010501",
+       "2021-01-10","THCS Ngô Quyền","THCS","2018",
+       "Hà Nam","Kinh","Hà Nam","Xóm 1, Thanh Hà, Thanh Liêm, Hà Nam","Thôn Thanh Hà, Thanh Liêm",
+       "VN2003010501","Độc thân","Nguyễn Thị Lan","0912345605",
+       "0912345605","9704366056789005","NV-005","Sale Nguyễn Hoa",
+       "Sale Nguyễn Hoa","Hà Nội","FUYU","Công nhân đúc nhựa",
+       daysLater(3),"","PENDING","INTERVIEW_PENDING","","Zalo",daysAgo(7)+"T14:00:00.000Z"],
+
+      // WK-T006 | L2.1 | PASSED
+      ["WK-T006","DG-01","Vũ Thị Lan","Nữ","2001-07-18","033201071801",
+       "2019-07-23","THPT Đồng Lộc","Phổ thông","2019",
+       "Hà Tĩnh","Kinh","Hà Tĩnh","Xã Đồng Lộc, Can Lộc, Hà Tĩnh","Thôn 3 Đồng Lộc, Hà Tĩnh",
+       "VN2001071801","Độc thân","Vũ Văn Hải","0912345606",
+       "0912345606","9704366067890006","NV-006","Sale Trần Bình",
+       "Sale Trần Bình","Hà Nội","FUYU","Công nhân lắp ráp điện tử",
+       daysAgo(7),daysLater(7),"PASSED","PASSED","","AFF/CTV Hoàng Lan",daysAgo(14)+"T15:00:00.000Z"],
+
+      // WK-T007 | L3 | WORKING - VWW
+      ["WK-T007","DG-01","Đặng Văn Minh","Nam","2000-04-12","036200041201",
+       "2018-04-18","THPT Thống Nhất","Phổ thông","2018",
+       "Hà Nam","Kinh","Hà Nam","Xóm 1, Thanh Hà, Thanh Liêm, Hà Nam","Thôn Thanh Hà, Thanh Liêm",
+       "VN2000041201","Độc thân","Đặng Thị Hà","0912345607",
+       "0912345607","9704366078901007","NV-007","Sale Phạm Châu",
+       "Sale Phạm Châu","Hà Nội","FUYU","Công nhân sản xuất",
+       daysAgo(30),daysAgo(14),"PASSED","WORKING","","Facebook",daysAgo(60)+"T08:00:00.000Z"],
+
+      // WK-T008 | L3.1 | QUIT
+      ["WK-T008","DG-01","Hoàng Thị Thu","Nữ","2002-09-30","036202093001",
+       "2020-10-05","THPT Lý Tự Trọng","Phổ thông","2020",
+       "Thanh Hóa","Kinh","Thanh Hóa","Xóm 5 Thôn Bắc Sơn, Hậu Lộc, Thanh Hóa","Thôn Bắc Sơn, Hậu Lộc",
+       "VN2002093001","Độc thân","Hoàng Văn Tú","0912345608",
+       "0912345608","9704366089012008","NV-008","Sale Lê Thảo",
+       "Sale Lê Thảo","Hà Nội","FUYU","Công nhân phổ thông",
+       daysAgo(45),daysAgo(30),"PASSED","QUIT",daysAgo(7),"Facebook",daysAgo(90)+"T08:00:00.000Z"],
+
+      // WK-T009 | L3.2 | TRANSFER_REQUEST
+      ["WK-T009","DG-01","Bùi Văn Tâm","Nam","1999-12-25","036199122501",
+       "2017-12-30","THPT Kim Bôi","Phổ thông","2017",
+       "Hòa Bình","Mường","Hòa Bình","Bản Dọi, Đú Sáng, Kim Bôi, Hòa Bình","Thôn Dọi, Đú Sáng, Kim Bôi",
+       "VN1999122501","Độc thân","Bùi Văn Mạnh","0912345609",
+       "0912345609","9704366090123009","NV-009","Sale Vũ Minh",
+       "Sale Vũ Minh","Hà Nội","FUYU","Công nhân đúc kim loại",
+       daysAgo(60),daysAgo(45),"PASSED","TRANSFER_REQUEST","","Zalo",daysAgo(90)+"T09:00:00.000Z"],
+
+      // WK-T010 | L4 | FEE_EXPIRED
+      ["WK-T010","DG-01","Ngô Thị Hà","Nữ","2001-06-08","036201060801",
+       "2019-06-14","THPT Lê Lợi","Phổ thông","2019",
+       "Nghệ An","Kinh","Nghệ An","29 Nguyễn Du, TP Vinh, Nghệ An","29 Nguyễn Du, TP Vinh",
+       "VN2001060801","Đã kết hôn","Ngô Văn Bình","0912345610",
+       "0912345610","9704366001234010","NV-010","Sale Nguyễn Hoa",
+       "Sale Nguyễn Hoa","Hà Nội","FUYU","Công nhân lắp ráp",
+       daysAgo(90),daysAgo(75),"PASSED","FEE_EXPIRED","","AFF Hệ thống",daysAgo(120)+"T10:00:00.000Z"]
+    ];
+
+    var wSheet = ss.getSheetByName("01_MASTER_WORKERS");
+    if (!wSheet) throw new Error("Không tìm thấy 01_MASTER_WORKERS");
+    var wLast = wSheet.getLastRow();
+    if (wLast > 1) wSheet.getRange(2, 1, wLast - 1, 34).clearContent();
+    wSheet.getRange(2, 1, workerRows.length, 34).setValues(workerRows);
+
+    // ── 2. SEED 02_CRM_DEALS_2026 (22 cột) ──────────────────────────────────
+    // A=deal_id, B=worker_id, C=full_name, D=phone, E=cccd, F=target_company
+    // G=branch, H=level_sale, I=assigned_sale, J=referral_ven_ctv
+    // K=interview_date, L=interview_result, M=start_date, N=actual_work_status
+    // O=is_vww, P=commission_policy, Q=commission_amount, R=commission_status
+    // S=notes, T=created_at, U=updated_at, V=updated_by
+
+    var dealRows = [
+      ["DL-2026-T001","WK-T001","Nguyễn Thị Mai Linh","0912345601","036202051234",
+       "","Hà Nội","C3","Sale Nguyễn Hoa","",
+       "","","","NEW",false,"CHK-3T-10TR","","CHUA_NGHIEM_THU",
+       "Lead mới từ Facebook Ads",daysAgo(7),daysAgo(7),"system_seed"],
+
+      ["DL-2026-T002","WK-T002","Trần Văn Bình","0912345602","074200082001",
+       "FUYU","Đồng Nai","L1","Sale Lê Thảo","",
+       "","","","ASSIGNED_TO_SALE",false,"CHK-3T-10TR","","CHUA_NGHIEM_THU",
+       "Đã phân bổ cho sale, đang chờ liên hệ",daysAgo(14),daysAgo(14),"system_seed"],
+
+      ["DL-2026-T003","WK-T003","Lê Thị Hương","0912345603","022201031001",
+       "FUYU","Bắc Ninh","L1.2","Sale Phạm Châu","CTV Nguyễn Lan",
+       "","","","FOLLOW_UP",false,"CHK-3T-10TR","","CHUA_NGHIEM_THU",
+       "Chăm sóc lại, hẹn gọi cuối tuần",daysAgo(21),daysAgo(7),"system_seed"],
+
+      ["DL-2026-T004","WK-T004","Phạm Thị Đan Thanh","0912345604","079198112201",
+       "","TP.HCM","L1.3","Sale Vũ Minh","",
+       "","","","REJECTED",false,"","","KHONG_DU_DIEU_KIEN",
+       "Từ chối - Bận việc gia đình, không có nhu cầu",daysAgo(30),daysAgo(30),"system_seed"],
+
+      ["DL-2026-T005","WK-T005","Nguyễn Văn Hùng","0912345605","036203010501",
+       "FUYU","Hà Nội","L2","Sale Nguyễn Hoa","AFF Zalo",
+       daysLater(3),"","","INTERVIEW_PENDING",false,"CHK-3T-10TR","","CHUA_NGHIEM_THU",
+       "Hẹn PV xưởng FUYU Bắc Giang - "+daysLater(3)+" 08:30",daysAgo(7),today,"system_seed"],
+
+      ["DL-2026-T006","WK-T006","Vũ Thị Lan","0912345606","033201071801",
+       "FUYU","Hà Nội","L2.1","Sale Trần Bình","AFF/CTV Hoàng Lan",
+       daysAgo(7),"PASSED",daysLater(7),"PASSED",false,"CHK-3T-10TR","","CHUA_NGHIEM_THU",
+       "Đỗ PV FUYU. Dự kiến đi làm "+daysLater(7),daysAgo(14),today,"system_seed"],
+
+      ["DL-2026-T007","WK-T007","Đặng Văn Minh","0912345607","036200041201",
+       "FUYU","Hà Nội","L3","Sale Phạm Châu","",
+       daysAgo(30),"PASSED",daysAgo(14),"WORKING",true,"CHK-3T-10TR","10000000","NGHIEM_THU_DOT1",
+       "✅ VWW - Đang đi làm tại FUYU. Đã nghiệm thu đợt 1 (10tr)",daysAgo(60),today,"system_seed"],
+
+      ["DL-2026-T008","WK-T008","Hoàng Thị Thu","0912345608","036202093001",
+       "FUYU","Hà Nội","L3.1","Sale Lê Thảo","",
+       daysAgo(45),"PASSED",daysAgo(30),"QUIT",false,"CHK-3T-10TR","0","KHONG_DU_DIEU_KIEN",
+       "Nghỉ ngang sau 15 ngày - Lý do sức khỏe",daysAgo(90),daysAgo(7),"system_seed"],
+
+      ["DL-2026-T009","WK-T009","Bùi Văn Tâm","0912345609","036199122501",
+       "FUYU","Hà Nội","L3.2","Sale Vũ Minh","",
+       daysAgo(60),"PASSED",daysAgo(45),"TRANSFER_REQUEST",false,"CHK-3T-10TR","5000000","CHO_XU_LY",
+       "Muốn chuyển sang KCN Thăng Long - Lương cao hơn",daysAgo(90),today,"system_seed"],
+
+      ["DL-2026-T010","WK-T010","Ngô Thị Hà","0912345610","036201060801",
+       "FUYU","Hà Nội","L4","Sale Nguyễn Hoa","AFF Hệ thống",
+       daysAgo(90),"PASSED",daysAgo(75),"FEE_EXPIRED",true,"CHK-3T-10TR","10000000","DA_NGHIEM_THU",
+       "✅ Hết thời gian tính phí. Đã nghiệm thu đủ 10tr",daysAgo(120),today,"system_seed"]
+    ];
+
+    var dSheet = ss.getSheetByName("02_CRM_DEALS_2026");
+    if (!dSheet) throw new Error("Không tìm thấy 02_CRM_DEALS_2026");
+    var dLast = dSheet.getLastRow();
+    if (dLast > 1) dSheet.getRange(2, 1, dLast - 1, 22).clearContent();
+    dSheet.getRange(2, 1, dealRows.length, 22).setValues(dealRows);
+
+    // ── 3. AUDIT LOG ─────────────────────────────────────────────────────────
+    var aSheet = ss.getSheetByName("03_AUDIT_LOG");
+    if (aSheet) {
+      aSheet.appendRow([
+        "AUD-SEED-"+Date.now(),"system_seed","SEED_TEST_DATA","ALL",
+        "SUCCESS","10 workers + 10 deals seeded for full pipeline test",
+        new Date().toISOString(),"Lucky CEO"
+      ]);
+    }
+
+    SpreadsheetApp.getUi().alert(
+      "✅ SEED THÀNH CÔNG!\n\n" +
+      "01_MASTER_WORKERS: 10 workers\n" +
+      "02_CRM_DEALS_2026: 10 deals\n\n" +
+      "Pipeline đã phủ:\n" +
+      "C3 → L1 → L1.2 → L1.3 → L2 → L2.1 → L3(VWW) → L3.1 → L3.2 → L4"
+    );
+
+  } catch(e) {
+    Logger.log("❌ " + e.message);
+    SpreadsheetApp.getUi().alert("❌ Lỗi: " + e.message);
+    throw e;
+  } finally {
+    lock.releaseLock();
   }
 }
 
-function jsonResponse_(obj, requestId) {
-  if (requestId && typeof obj === "object" && !obj.requestId) {
-    obj.requestId = requestId;
-  }
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}

@@ -53,53 +53,56 @@ Chỉ khi dữ liệu đi làm được đối soát với dữ liệu chấm c�
 
 ---
 
-# 4. Roadmap 6 Giai Đoạn
+# 4. Roadmap Chiến Lược 6 Giai Đoạn (Workforce OS & Enterprise CRM)
 
-## Giai đoạn 1 — Workforce Core & Data Management
+## Giai đoạn 1 — Workforce Core & Enterprise CRM 19 Level Sale (Scope Hiện Tại — Đã Hoàn Thành 100%)
 
-- Tập trung dữ liệu đầu vào/đầu ra.
-- Quản lý lao động.
-- Quản lý phỏng vấn.
-- Quản lý phân xưởng/đi làm.
-- Nhập chấm công.
-- Matching dữ liệu đối tác.
-- Xác định lao động phát sinh công thực tế.
+- **Talent CRM (B2C — Quản trị Quan hệ Ứng viên & Lao động):**
+  - Quản lý phễu bán hàng tuyển dụng 19 Level Sale: Tiếp nhận Lead C3 -> Nuôi dưỡng Telesale 8 bước (L1.1 đến L1.8) -> Lịch hẹn phỏng vấn (L2) -> Lên xe đi làm & Onboarding (L3) -> Giữ chân & Đối soát công (L4).
+  - Hồ sơ Worker 360: Xem toàn diện lịch sử phỏng vấn, nhật ký gọi điện, phân xưởng và công nợ tạm ứng.
+- **Employer / Partner CRM (B2B — Quản trị Khách hàng Doanh nghiệp KCN):**
+  - Quản trị danh mục 29 nhà máy đối tác (`DM_COMPANY`) và 8 chi nhánh văn phòng (`DM_BRANCH`).
+  - Phân bổ lao động vào từng xưởng theo chỉ tiêu tiếp nhận.
+- **Bảng Tính Lưới Excel CRM Grid (High-Density Workspace):**
+  - Bảng dữ liệu toàn màn hình 34 cột VNeID (`01_MASTER_WORKERS`) và 22 cột CRM Deals (`02_CRM_DEALS_2026`).
+  - Cột cố định `HÀNH ĐỘNG` mép phải (Sửa trực tiếp ✏️, In 🖨️, Đồng bộ 🔄).
+  - Bộ điều khiển đồng bộ kép: Hẹn giờ tự động đếm ngược (30s, 1m, 3m, 5m) + Nút Đồng bộ ngay tức thì.
+- **Data Governance & North Star VWW:**
+  - Nhập file chấm công nhà máy, matching tự động và mở khóa trạng thái Verified Working Worker (VWW).
+  - Chống trùng lặp CCCD/SĐT O(1) và bôi đỏ trường lỗi chi tiết.
+  - Phân quyền RBAC 6 nhóm vai trò đa Tenant (`coach.chuyen@gmail.com` Super Admin).
 
-**Đây là scope production pilot hiện tại.**
+## Giai đoạn 2 — AI Talent CRM & Worker Care (Chăm Sóc & Tái Kích Hoạt Lao Động Bằng AI)
 
-## Giai đoạn 2 — AI Worker Care
+- **Omni-channel CRM:** Kết nối Zalo OA, Zalo ZNS, SMS Brandname và Zalo Mini App.
+- **AI Retention CRM (Giảm tỷ lệ bỏ việc L3.1):** AI Agent tự động gửi tin nhắn hỏi thăm đời sống, điều kiện ký túc xá và công việc sau 1 ngày, 3 ngày, 7 ngày đi làm; cảnh báo sớm nguy cơ bỏ xưởng cho Quản lý vận hành.
+- **Re-activation CRM (Tái kích hoạt lao động cũ):** Tự động lọc các lao động đã hoàn thành hợp đồng hoặc nghỉ việc (L3.1, L4) để gửi gợi ý việc làm mới phù hợp, tái khai thác tệp ứng viên cũ với chi phí tìm kiếm = 0 đồng.
 
-- AI chăm sóc lao động.
-- Duy trì tương tác.
-- Tái kích hoạt khi lao động có nhu cầu tìm việc/chuyển việc.
-- Kết nối Zalo và các kênh phù hợp.
+## Giai đoạn 3 — B2B Employer CRM & Revenue Automation (Quản Trị Khách Hàng Doanh Nghiệp & Doanh Thu)
 
-## Giai đoạn 3 — Rewards & Revenue Automation
+- **Key Account Management (KAM):** Quản lý hồ sơ đối tác KCN (Foxconn, Luxshare, Goertek, WNC, FUYU...), lưu trữ hợp đồng nguyên tắc, đơn giá cung ứng theo giờ hoặc trọn gói.
+- **Quản lý Đơn hàng Tuyển dụng (Job Orders / Headcount Requisitions):** Tiếp nhận chỉ tiêu tuyển dụng từ nhà máy, theo dõi tiến độ bù quân theo thời gian thực.
+- **Billing & Commission Engine:**
+  - Tự động tính toán doanh thu cung ứng theo giờ/tháng dựa trên dữ liệu chấm công VWW.
+  - Tự động tính bảng hoa hồng cho tuyển dụng và cộng tác viên.
+  - Quy trình ký duyệt hoa hồng 4 cấp điện tử (Leader Sale -> Manager -> Kế toán -> Giám đốc điều hành).
 
-- Tính thưởng lao động.
-- Tính thưởng nhân viên.
-- Tính doanh thu theo từng đối tác.
-- Xuất báo cáo hỗ trợ kế toán.
+## Giai đoạn 4 — Internal Financial CRM & Contract Reconciliation (Quản Trị Hợp Đồng & Đối Soát Tài Chính)
 
-## Giai đoạn 4 — Internal Finance Reconciliation
+- **Vendor / CTV CRM:** Quản lý mạng lưới đối tác cung ứng phụ và cộng tác viên tuyển dụng; theo dõi hạn mức công nợ tạm ứng, chi phí xe đưa đón, tiền ăn trọ của người lao động.
+- **Contract & Invoice Reconciliation:** Tự động đối soát bảng chấm công nhà máy với điều khoản hợp đồng để xuất bảng kê thanh toán và hóa đơn dịch vụ cung ứng.
+- **Báo cáo Tài chính Phân tầng (P&L by Branch):** Đo lường biên lợi nhuận ròng của từng chi nhánh và từng hợp đồng cung ứng KCN.
 
-- Quản lý thu/chi.
-- Công nợ.
-- Đối soát nội bộ.
-- Báo cáo tài chính theo văn phòng.
+## Giai đoạn 5 — AI Marketing CRM & Lead Harvester Automation (Tự Động Hóa Thu Hút Ứng Viên)
 
-## Giai đoạn 5 — AI Marketing Automation
+- **Inbound Lead Harvester:** Thu thập và bóc tách tự động Lead ứng viên từ Facebook Ads, TikTok, Zalo, Landing Page đổ thẳng vào tầng C3 của CRM trong 1 giây.
+- **AI Content & Short-video Production:** Tự động tạo kịch bản video AI tuyển dụng theo từng khu công nghiệp và lịch xe đưa đón; xuất bản tự động lên các kênh mạng xã hội.
+- **Lead Routing & Auto-Distribution:** Phân bổ tự động data C3 cho đội ngũ Telesale theo chi nhánh và năng lực chuyển đổi của từng nhân viên.
 
-- Mỗi văn phòng có kênh truyền thông riêng.
-- Facebook, TikTok và nền tảng phù hợp.
-- AI hỗ trợ nội dung, video, lập lịch và phân phối.
+## Giai đoạn 6 — Multi-Tenant Enterprise Workforce SaaS & Marketplace (Nhân Bản Toàn Quốc)
 
-## Giai đoạn 6 — Optimization & Replication
-
-- Tối ưu quy trình.
-- Chuẩn hóa triển khai.
-- Tự động hóa công việc lặp lại.
-- Nhân bản nhanh cho nhiều văn phòng/doanh nghiệp.
+- **Multi-Tenant SaaS Engine:** Đóng gói toàn diện giải pháp Workforce OS & CRM thành nền tảng SaaS phục vụ hàng trăm doanh nghiệp cung ứng nhân lực và trường đào tạo nghề trên toàn quốc.
+- **Workforce Marketplace:** Sàn điều phối và san sẻ nguồn lực lao động liên khu công nghiệp, giải quyết bài toán thừa/thiếu nhân lực thời vụ giữa các nhà máy khi cao điểm/thấp điểm.
 
 ---
 

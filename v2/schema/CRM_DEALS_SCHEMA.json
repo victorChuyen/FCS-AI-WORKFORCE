@@ -1,0 +1,31 @@
+{
+  "tableName": "02_CRM_DEALS_2026",
+  "totalColumns": 22,
+  "description": "Kho quản lý toàn diện vòng đời 19 Level Sale tuyển dụng cho từng đợt ứng tuyển của lao động",
+  "primaryKey": "deal_id",
+  "protectedColumns": ["A", "B", "C", "D", "E", "created_at"],
+  "columns": [
+    { "index": 1, "colLetter": "A", "key": "deal_id", "label": "Mã Deal ứng tuyển", "required": true, "protected": true, "type": "STRING", "example": "DL-2026-000001" },
+    { "index": 2, "colLetter": "B", "key": "worker_id", "label": "Mã định danh lao động", "required": true, "protected": true, "type": "STRING", "example": "WK-000001" },
+    { "index": 3, "colLetter": "C", "key": "full_name", "label": "Họ và tên lao động", "required": true, "protected": true, "type": "FORMULA", "formula": "=IFERROR(VLOOKUP(B2, '01_MASTER_WORKERS'!A:C, 3, FALSE), \"\")" },
+    { "index": 4, "colLetter": "D", "key": "phone", "label": "Số điện thoại", "required": true, "protected": true, "type": "FORMULA", "formula": "=IFERROR(VLOOKUP(B2, '01_MASTER_WORKERS'!A:T, 20, FALSE), \"\")" },
+    { "index": 5, "colLetter": "E", "key": "cccd", "label": "Số CCCD", "required": true, "protected": true, "type": "FORMULA", "formula": "=IFERROR(VLOOKUP(B2, '01_MASTER_WORKERS'!A:F, 6, FALSE), \"\")" },
+    { "index": 6, "colLetter": "F", "key": "target_company", "label": "Nhà máy ứng tuyển", "required": true, "protected": false, "type": "ENUM", "dropdownFrom": "DM_COMPANY!B2:B30" },
+    { "index": 7, "colLetter": "G", "key": "branch", "label": "Chi nhánh phụ trách", "required": true, "protected": false, "type": "ENUM", "dropdownFrom": "DM_BRANCH!B2:B9" },
+    { "index": 8, "colLetter": "H", "key": "level_sale_status", "label": "Trạng thái Level Sale", "required": true, "protected": false, "type": "ENUM", "dropdownFrom": "DM_LEVEL_SALE!A2:A20", "default": "C3" },
+    { "index": 9, "colLetter": "I", "key": "assigned_sale", "label": "Sale phụ trách", "required": false, "protected": false, "type": "STRING" },
+    { "index": 10, "colLetter": "J", "key": "referral_ven_ctv", "label": "Nguồn VEN / CTV", "required": false, "protected": false, "type": "STRING" },
+    { "index": 11, "colLetter": "K", "key": "interview_date", "label": "Ngày hẹn phỏng vấn", "required": false, "protected": false, "type": "DATE", "format": "YYYY-MM-DD" },
+    { "index": 12, "colLetter": "L", "key": "interview_result", "label": "Kết quả phỏng vấn", "required": false, "protected": false, "type": "ENUM", "dropdown": ["Đỗ phỏng vấn", "Trượt phỏng vấn", "Không đến phỏng vấn", "Chờ kết quả"] },
+    { "index": 13, "colLetter": "M", "key": "start_date", "label": "Ngày đi làm thực tế", "required": false, "protected": false, "type": "DATE", "format": "YYYY-MM-DD" },
+    { "index": 14, "colLetter": "N", "key": "actual_work_status", "label": "Tình trạng làm việc", "required": false, "protected": false, "type": "ENUM", "dropdown": ["Đang làm việc", "Nghỉ việc ngang", "Muốn đổi công ty", "Đã hết thời gian phí"] },
+    { "index": 15, "colLetter": "O", "key": "is_vww", "label": "Xác nhận VWW", "required": false, "protected": true, "type": "BOOLEAN", "default": false },
+    { "index": 16, "colLetter": "P", "key": "commission_policy", "label": "Chính sách hoa hồng", "required": false, "protected": false, "type": "STRING" },
+    { "index": 17, "colLetter": "Q", "key": "commission_amount", "label": "Số tiền hoa hồng (VNĐ)", "required": false, "protected": false, "type": "NUMBER" },
+    { "index": 18, "colLetter": "R", "key": "commission_status", "label": "Trạng thái thanh toán", "required": false, "protected": false, "type": "ENUM", "dropdown": ["Chờ duyệt", "Đã duyệt Lead", "Đã duyệt Manager", "Đã thanh toán"] },
+    { "index": 19, "colLetter": "S", "key": "notes", "label": "Ghi chú chăm sóc / Lý do", "required": false, "protected": false, "type": "STRING" },
+    { "index": 20, "colLetter": "T", "key": "created_at", "label": "Thời điểm tiếp nhận Lead", "required": true, "protected": true, "type": "TIMESTAMP" },
+    { "index": 21, "colLetter": "U", "key": "updated_at", "label": "Thời điểm cập nhật", "required": true, "protected": true, "type": "TIMESTAMP" },
+    { "index": 22, "colLetter": "V", "key": "updated_by", "label": "Người cập nhật gần nhất", "required": true, "protected": true, "type": "STRING" }
+  ]
+}

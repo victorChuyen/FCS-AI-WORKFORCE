@@ -1,0 +1,10 @@
+[
+  { "id": "BR-01", "name": "HÀ NAM", "code": "HNM", "status": "ACTIVE" },
+  { "id": "BR-02", "name": "NAM ĐỊNH", "code": "NDH", "status": "ACTIVE" },
+  { "id": "BR-03", "name": "HƯNG YÊN", "code": "HYN", "status": "ACTIVE" },
+  { "id": "BR-04", "name": "QUẢNG NINH", "code": "QNH", "status": "ACTIVE" },
+  { "id": "BR-05", "name": "BẮC GIANG", "code": "BGG", "status": "ACTIVE" },
+  { "id": "BR-06", "name": "HẢI PHÒNG", "code": "HPG", "status": "ACTIVE" },
+  { "id": "BR-07", "name": "NINH BÌNH", "code": "NBH", "status": "ACTIVE" },
+  { "id": "BR-08", "name": "VĨNH PHÚC", "code": "VPC", "status": "ACTIVE" }
+]

@@ -6,10 +6,11 @@ import {
   logout as authLogout,
   reloadCurrentUser as authReloadUser,
   sendVerificationEmail as authSendVerificationEmail,
-  signInWithEmail,
   getStoredUser,
   saveStoredUser,
 } from '../services/auth';
+import { setApiUserMetadata } from '../services/apiClient';
+import { setUsingMockApi } from '../services/api';
 import { AppUser } from '../types/auth';
 
 interface AuthContextType {
@@ -19,7 +20,6 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<AppUser | null>;
   sendVerificationEmail: () => Promise<void>;
-  loginWithPreset: (email: string) => Promise<AppUser>;
   isConfigured: boolean;
   missingEnvVars: string[];
 }
@@ -31,7 +31,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const missingEnvVars = isConfigured ? [] : getMissingFirebaseEnvVars();
 
   // Initialize with stored user for persistent session
-  const [user, setUser] = useState<AppUser | null>(() => getStoredUser());
+  const [user, setUser] = useState<AppUser | null>(() => {
+    const stored = getStoredUser();
+    if (stored) {
+      setApiUserMetadata({
+        firebaseUid: stored.uid,
+        email: stored.email,
+        role: stored.role,
+        tenantId: stored.tenantId,
+        officeId: stored.officeId,
+        staffId: stored.staffId,
+      });
+    }
+    return stored;
+  });
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -47,6 +60,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const mapped = mapFirebaseUser(firebaseUser);
           setUser(mapped);
           saveStoredUser(mapped);
+          if (mapped) {
+            if (mapped.role === 'VIEWER') {
+              setUsingMockApi(true);
+            }
+            setApiUserMetadata({
+              firebaseUid: firebaseUser.uid,
+              email: mapped.email,
+              role: mapped.role,
+              tenantId: mapped.tenantId,
+              officeId: mapped.officeId,
+              staffId: mapped.staffId,
+            });
+          }
+        } else {
+          setUser(null);
+          saveStoredUser(null);
+          setApiUserMetadata({
+            firebaseUid: '',
+            email: '',
+            role: 'GUEST',
+            tenantId: 'FCS-000001',
+            officeId: '',
+            staffId: '',
+          });
         }
         setLoading(false);
       },
@@ -59,25 +96,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, [isConfigured]);
 
-  const loginWithPreset = async (email: string): Promise<AppUser> => {
-    setLoading(true);
-    try {
-      const appUser = await signInWithEmail(email);
-      setUser(appUser);
-      saveStoredUser(appUser);
-      return appUser;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = async () => {
     try {
       await authLogout();
       setUser(null);
+      saveStoredUser(null);
+      setApiUserMetadata({
+        firebaseUid: '',
+        email: '',
+        role: 'GUEST',
+        tenantId: 'FCS-000001',
+        officeId: '',
+        staffId: '',
+      });
     } catch (error) {
       console.error('Error logging out:', error);
       setUser(null);
+      saveStoredUser(null);
     }
   };
 
@@ -87,6 +122,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (updated) {
         setUser(updated);
         saveStoredUser(updated);
+        setApiUserMetadata({
+          firebaseUid: updated.uid,
+          email: updated.email,
+          role: updated.role,
+          tenantId: updated.tenantId,
+          officeId: updated.officeId,
+          staffId: updated.staffId,
+        });
         return updated;
       }
       return user;
@@ -107,7 +150,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     refreshUser,
     sendVerificationEmail,
-    loginWithPreset,
     isConfigured,
     missingEnvVars,
   };

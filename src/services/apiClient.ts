@@ -1,14 +1,16 @@
 import { API_BASE_URL } from '../config/env';
 import { ApiResponse } from '../types';
-import { getIdToken } from './auth';
+import { getIdToken, getStoredUser } from './auth';
+
+const initialStored = getStoredUser();
 
 let currentUserMetadata = {
-  firebaseUid: 'UID-COACH-CHUYEN',
-  email: 'coach.chuyen@gmail.com',
-  role: 'PLATFORM_SUPER_ADMIN',
-  tenantId: 'FCS-000001',
-  officeId: 'OFF-01',
-  staffId: 'STF-001',
+  firebaseUid: initialStored?.uid || '',
+  email: initialStored?.email || '',
+  role: initialStored?.role || 'GUEST',
+  tenantId: initialStored?.tenantId || 'FCS-000001',
+  officeId: initialStored?.officeId || 'OFF-01',
+  staffId: initialStored?.staffId || '',
 };
 
 export const setApiUserMetadata = (meta: Partial<typeof currentUserMetadata>) => {
@@ -44,10 +46,33 @@ export interface ApiStandardRequest<P = any> {
  *   "payload": {}
  * }
  */
+/**
+ * Normalize legacy or V4 actions to V2 standard actions for full compatibility
+ */
+const ACTION_ALIAS_MAP: Record<string, string> = {
+  'dashboard.summary': 'v2.dashboard.stats',
+  'pipeline.funnel': 'v2.dashboard.stats',
+  'results.summary': 'v2.dashboard.stats',
+  'worker.list': 'v2.workers.list',
+  'workers.list': 'v2.workers.list',
+  'worker.get': 'v2.worker.get',
+  'worker.create': 'v2.worker.create',
+  'worker.update': 'v2.worker.update',
+  'deal.list': 'v2.deals.list',
+  'deals.list': 'v2.deals.list',
+  'deal.create': 'v2.deal.create',
+  'deal.move_stage': 'v2.deal.move_stage',
+  'deal.update': 'v2.deal.update',
+  'taxonomy.get': 'v2.taxonomy.get',
+  'master.taxonomy': 'v2.taxonomy.get',
+  'pipeline.events': 'v2.pipeline.events',
+};
+
 export async function callApi<T = any, P = any>(
-  action: string,
+  rawAction: string,
   payload: P = {} as P
 ): Promise<ApiResponse<T>> {
+  const action = ACTION_ALIAS_MAP[rawAction] || rawAction;
   const requestId = `REQ-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
   const timestamp = Date.now();
 
@@ -92,9 +117,12 @@ export async function callApi<T = any, P = any>(
       }
     }
 
-    // Standard CORS-safe fetch: DO NOT pass custom Authorization header to Apps Script Web App
-    // because Apps Script does not support CORS OPTIONS preflight requests.
-    const response = await fetch(API_BASE_URL, {
+    // Standard CORS-safe fetch: Append action to query parameters for Google Apps Script Web App parameter compatibility
+    const url = API_BASE_URL.includes('?')
+      ? `${API_BASE_URL}&action=${encodeURIComponent(action)}`
+      : `${API_BASE_URL}?action=${encodeURIComponent(action)}`;
+
+    const response = await fetch(url, {
       method: 'POST',
       redirect: 'follow',
       headers: {
@@ -116,14 +144,47 @@ export async function callApi<T = any, P = any>(
     }
 
     const resJson = await response.json();
+
     if (resJson && typeof resJson === 'object') {
+      let resolvedData = resJson.data;
+      if (resolvedData === undefined && resJson.success) {
+        if (resJson.items !== undefined) resolvedData = resJson.items;
+        else if (resJson.worker !== undefined) resolvedData = resJson.worker;
+        else if (resJson.deal !== undefined) resolvedData = resJson.deal;
+        else if (resJson.metrics !== undefined) resolvedData = resJson.metrics;
+        else resolvedData = resJson;
+      }
+
+      let resolvedError = null;
+      if (!resJson.success) {
+        if (typeof resJson.error === 'string') {
+          resolvedError = {
+            code: 'API_ERROR',
+            message: resJson.error,
+          };
+        } else if (resJson.error && typeof resJson.error === 'object') {
+          resolvedError = {
+            code: resJson.error.code || 'API_ERROR',
+            message: resJson.error.message || resJson.message || 'Hệ thống báo lỗi trong quá trình xử lý dữ liệu.',
+            details: resJson.error.details,
+          };
+        } else if (resJson.message) {
+          resolvedError = {
+            code: 'API_ERROR',
+            message: String(resJson.message),
+          };
+        } else {
+          resolvedError = {
+            code: 'API_ERROR',
+            message: 'Hệ thống báo lỗi trong quá trình xử lý dữ liệu.',
+          };
+        }
+      }
+
       return {
         success: Boolean(resJson.success),
-        data: (resJson.data ?? null) as T | null,
-        error: resJson.error || (resJson.success ? null : {
-          code: 'API_ERROR',
-          message: 'Hệ thống báo lỗi trong quá trình xử lý dữ liệu.',
-        }),
+        data: (resolvedData ?? null) as T | null,
+        error: resolvedError,
         requestId: resJson.requestId || requestId,
       };
     }

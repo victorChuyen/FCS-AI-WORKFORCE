@@ -31,70 +31,64 @@ console.log('🎯 FCS AI WORKFORCE OS — LIVE API DIAGNOSTIC SUITE');
 console.log('🔗 Target URL:', apiBaseUrl);
 console.log('===============================================================\n');
 
-function callEndpoint(action, payload = {}) {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    const postData = JSON.stringify({
-      action: action,
-      requestId: `diag-${Date.now()}`,
-      timestamp: Date.now(),
-      identity: {
-        firebaseUid: 'RChRZFoJazPizvBtHFX9dzjLGkJ2',
-        email: 'coach.chuyen@gmail.com',
-        role: 'PLATFORM_SUPER_ADMIN',
-        tenantId: 'FCS-000001',
-      },
-      payload: payload,
-    });
+async function callEndpoint(action, payload = {}, retryCount = 1) {
+  const start = Date.now();
+  const postData = JSON.stringify({
+    action: action,
+    requestId: `diag-${Date.now()}`,
+    timestamp: Date.now(),
+    identity: {
+      firebaseUid: 'RChRZFoJazPizvBtHFX9dzjLGkJ2',
+      email: 'coach.chuyen@gmail.com',
+      role: 'PLATFORM_SUPER_ADMIN',
+      tenantId: 'FCS-000001',
+    },
+    payload: payload,
+  });
 
-    const req = https.request(apiBaseUrl, {
+  try {
+    const url = apiBaseUrl.includes('?')
+      ? `${apiBaseUrl}&action=${encodeURIComponent(action)}`
+      : `${apiBaseUrl}?action=${encodeURIComponent(action)}`;
+
+    const res = await fetch(url, {
       method: 'POST',
+      redirect: 'follow',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
-        'Content-Length': Buffer.byteLength(postData),
       },
-    }, (res) => {
-      // Follow redirect (Apps Script 302)
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        https.get(res.headers.location, (redirRes) => {
-          let body = '';
-          redirRes.on('data', d => body += d);
-          redirRes.on('end', () => {
-            const elapsed = Date.now() - start;
-            try {
-              resolve({ elapsed, data: JSON.parse(body) });
-            } catch (e) {
-              resolve({ elapsed, raw: body });
-            }
-          });
-        });
-        return;
-      }
-      let body = '';
-      res.on('data', d => body += d);
-      res.on('end', () => {
-        const elapsed = Date.now() - start;
-        try {
-          resolve({ elapsed, data: JSON.parse(body) });
-        } catch (e) {
-          resolve({ elapsed, raw: body });
-        }
-      });
+      body: postData,
     });
 
-    req.on('error', reject);
-    req.write(postData);
-    req.end();
-  });
+    const elapsed = Date.now() - start;
+    const rawText = await res.text();
+    try {
+      const data = JSON.parse(rawText);
+      return { elapsed, data };
+    } catch {
+      // If Google returned HTML throttle page, retry once with backoff
+      if (retryCount > 0) {
+        await new Promise(r => setTimeout(r, 2000));
+        return callEndpoint(action, payload, retryCount - 1);
+      }
+      return { elapsed, raw: rawText.slice(0, 100), data: { success: false, error: { message: 'Google Apps Script trả về HTML thay vì JSON (Rate limit tạm thời).' } } };
+    }
+  } catch (err) {
+    if (retryCount > 0) {
+      await new Promise(r => setTimeout(r, 2000));
+      return callEndpoint(action, payload, retryCount - 1);
+    }
+    throw err;
+  }
 }
 
 async function runSuite() {
   const tests = [
-    { name: '1. Kiểm tra System Health', action: 'system.health' },
-    { name: '2. Tải Dashboard Summary & VWW', action: 'dashboard.summary' },
-    { name: '3. Lấy Danh Sách Lao Động Thực Tế', action: 'worker.list' },
-    { name: '4. Kiểm tra Hàng Đợi Xử Lý (Action Queue)', action: 'action.list' },
-    { name: '5. Kiểm tra Đối Soát Chấm Công (Matching List)', action: 'matching.list' },
+    { name: '1. Kiểm tra System Health', action: 'v2.health' },
+    { name: '2. Thống Kê Dashboard Stats & VWW', action: 'v2.dashboard.stats' },
+    { name: '3. Lấy Danh Sách Lao Động Thực Tế (34 Cột)', action: 'v2.workers.list' },
+    { name: '4. Kiểm tra Phễu 19 Level Sale CRM Deals', action: 'v2.deals.list' },
+    { name: '5. Danh mục Hệ Thống & Taxonomy', action: 'v2.taxonomy.get' },
   ];
 
   for (const test of tests) {
@@ -103,19 +97,25 @@ async function runSuite() {
       const res = await callEndpoint(test.action);
       if (res.data && res.data.success) {
         console.log(`✅ OK (${res.elapsed}ms)`);
-        if (test.action === 'system.health') {
-          console.log(`   └─ Backend Version: ${res.data.data.version} | Sheet: ${res.data.data.spreadsheet}`);
-        } else if (test.action === 'dashboard.summary') {
-          console.log(`   └─ North Star VWW: ${res.data.data.northStar?.value} | Tổng lao động: ${res.data.data.metrics?.totalWorkers}`);
-        } else if (test.action === 'worker.list') {
-          console.log(`   └─ Tổng số hồ sơ thực tế trong Sheet: ${res.data.data.total || res.data.data.items?.length}`);
+        if (test.action === 'v2.health') {
+          console.log(`   └─ Backend Version: ${res.data.version} | Sheet: ${res.data.spreadsheetName}`);
+        } else if (test.action === 'v2.dashboard.stats') {
+          const funnel = res.data.data?.funnel || {};
+          const metrics = res.data.data?.metrics || {};
+          console.log(`   └─ Tổng lao động: ${funnel.total_workers ?? res.data.data?.totalWorkers ?? 0} | Deals: ${funnel.total_deals ?? res.data.data?.totalDeals ?? 0} | VWW: ${metrics.vww_count ?? 0} | Chờ đi làm: ${metrics.waiting_start ?? 0}`);
+        } else if (test.action === 'v2.workers.list') {
+          console.log(`   └─ Tổng số hồ sơ thực tế trong Sheet: ${res.data.data?.total || res.data.data?.length || 0}`);
+        } else if (test.action === 'v2.deals.list') {
+          console.log(`   └─ Tổng số Deals thực tế trong Sheet: ${res.data.data?.total || res.data.data?.length || 0}`);
         }
       } else {
-        console.log(`⚠️ PHẢN HỒI LỖI (${res.elapsed}ms):`, res.data?.error?.message || res.raw || 'Unknown error');
+        console.log(`⚠️ PHẢN HỒI LỖI (${res.elapsed}ms):`, res.data?.error?.message || res.data?.error || res.raw || 'Unknown error');
       }
     } catch (err) {
       console.log(`❌ THẤT BẠI:`, err.message);
     }
+    // Respect Google Apps Script concurrency rate limit
+    await new Promise(r => setTimeout(r, 1000));
   }
 
   console.log('\n===============================================================');

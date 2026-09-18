@@ -87,15 +87,15 @@ export const FinalCTASection: React.FC<FinalCTASectionProps> = ({
           <div className="pt-4 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-slate-400">
             <span className="flex items-center space-x-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Bảo mật Firebase RBAC</span>
+              <span>Bảo mật phân quyền đa tầng</span>
             </span>
             <span className="flex items-center space-x-1.5">
               <FileSpreadsheet className="w-4 h-4 text-blue-400" />
-              <span>Đồng bộ Google Sheets</span>
+              <span>Đồng bộ 2 chiều Google Sheets</span>
             </span>
             <span className="flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Sprint 01 Golden Flow API 3.2.0</span>
+              <span>Quy trình Golden Flow khép kín</span>
             </span>
           </div>
         </div>

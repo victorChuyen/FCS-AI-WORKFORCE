@@ -25,12 +25,13 @@ node scripts/seed_firebase_users.mjs
 Tự động xác thực qua Service Account `firebase-adminsdk-fbsvc@fcs-ai-workforce.iam.gserviceaccount.com`, khởi tạo 4 tài khoản nòng cốt, gán mật khẩu chuẩn `Fcs@2026!`, đặt `emailVerified: true` và phân quyền Custom Claims (`role`, `tenantId`, `isSuperAdmin`).
 
 ## 3. Triển khai nâng cấp Google Apps Script V4 Multi-Tenant
-File mã nguồn độc lập đã được chuẩn bị tại:
-`D:\FCS-AI-WORKFORCE\backend\Code.gs` (49.4 KB)
+File mã nguồn độc lập đã được đóng gói sẵn sàng tại:
+`D:\FCS-AI-WORKFORCE\backend\dist\Code.gs` (53.6 KB)
+*(Có thể tạo lại bất kỳ lúc nào bằng lệnh: `npm run bundle:backend`)*
 
 Các bước triển khai trên Google Apps Script:
 1. Mở dự án Apps Script tại [script.google.com](https://script.google.com).
-2. Dán toàn bộ nội dung file `backend/Code.gs` vào `Code.gs`.
+2. Dán toàn bộ nội dung file `backend/dist/Code.gs` vào `Code.gs`.
 3. Chọn hàm `setupSuperAdminMaster` từ danh sách Run và bấm Chạy để tạo bảng `FCS_SUPER_ADMIN_MASTER` (8 tab).
 4. Chọn hàm `registerPilotTenantFiles` và bấm Chạy để liên kết/tạo bảng `FCS-000001_DATA` (12 tab) và `FCS-000001_MANAGEMENT` (12 tab).
 5. Triển khai bản cập nhật (Deploy as Web App, Execute as: Me, Who has access: Anyone).

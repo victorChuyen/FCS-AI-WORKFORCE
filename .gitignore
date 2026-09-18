@@ -1,16 +1,56 @@
+# Dependencies
 node_modules/
-build/
+.pnp
+.pnp.js
+
+# Production build outputs
 dist/
+build/
 coverage/
-.DS_Store
-*.log
+
+# Local Environment Variables
 .env*
 !.env.example
+
+# Service Account & Private Keys (STRICT NON-NEGOTIABLE RULE 6)
 *firebase-adminsdk*.json
 *serviceaccount*.json
 *.pem
 *.key
+
+# Clasp & Google Apps Script Local States
+.clasp.json
+.claspignore
+.clasprc.json
+
+# Cloudflare & Wrangler Local States
+.wrangler/
+
+# System & Temporary Logs
+*.log
+.DS_Store
+Thumbs.db
 .system_generated/
+test_results/
+
+
+# Client Private Raw Data & Spreadsheets (STRICT NON-NEGOTIABLE RULE 4 & 8)
+0_HƯỚNG DẪN SỬ DỤNG/
+THÔNG TIN LAO ĐỘNG FOXCONN FCS.xlsx/
+*.xlsx
+*.xls
+*.csv
+*.pdf
+backend/captured_backup/
+*.png
+*.jpg
+*.jpeg
+*.webp
+!public/favicon.svg
+!public/og-image.svg
+!public/images/*
+
+# Automation / Secret Scripts
 scripts/read_advapi_cred.ps1
 scripts/read_creds.ps1
 scripts/find_cf_token.mjs

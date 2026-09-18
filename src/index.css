@@ -31,3 +31,293 @@ body {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ==========================================================================
+   LUXURY ENTERPRISE TOKENS & ANIMATIONS (Cloned from Meta Ads & Tuned for FCS)
+   ========================================================================== */
+
+/* Shimmer Text Effects */
+.shimmer-text-orange {
+  background: linear-gradient(120deg, #f97316 0%, #fbbf24 35%, #ea580c 65%, #f97316 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+.shimmer-text-blue {
+  background: linear-gradient(120deg, #38bdf8 0%, #60a5fa 30%, #818cf8 70%, #38bdf8 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 5s linear infinite;
+}
+
+.brand-shimmer {
+  background: linear-gradient(120deg, #38bdf8 0%, #818cf8 30%, #f59e0b 60%, #10b981 85%, #38bdf8 100%);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 6s ease-in-out infinite;
+}
+
+/* Neon Glow Pulses */
+.glow-pulse {
+  animation: pulseGlowOrange 3.5s ease-in-out infinite;
+}
+
+.glow-pulse-blue {
+  animation: pulseGlowBlue 3.5s ease-in-out infinite;
+}
+
+.pulse-dot {
+  animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Interactive Hover Buttons */
+.glow-border-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.glow-border-hover:hover {
+  transform: translateY(-3px) scale(1.01) !important;
+  box-shadow: 0 12px 30px rgba(249, 115, 22, 0.35) !important;
+}
+
+.glow-border-blue-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.glow-border-blue-hover:hover {
+  transform: translateY(-3px) scale(1.01) !important;
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4) !important;
+}
+
+.hero-btn-secondary {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.hero-btn-secondary:hover {
+  transform: translateY(-2px) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+/* Keyframes */
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseGlowOrange {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3), inset 0 0 12px rgba(249, 115, 22, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(249, 115, 22, 0.65), inset 0 0 25px rgba(249, 115, 22, 0.25);
+  }
+}
+
+@keyframes pulseGlowBlue {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), inset 0 0 12px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(59, 130, 246, 0.65), inset 0 0 25px rgba(59, 130, 246, 0.25);
+  }
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+/* ==========================================================================
+   NEON TEXT GLOW & LIVE RUNNING TICKER MARQUEE (HIGH LUXURY TERMINAL)
+   ========================================================================== */
+
+.neon-text-orange {
+  color: #ff9800;
+  background: linear-gradient(135deg, #fff7ed 0%, #fdba74 25%, #fb923c 55%, #f97316 80%, #ea580c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(249, 115, 22, 0.55)) drop-shadow(0 0 32px rgba(249, 115, 22, 0.35));
+}
+
+.neon-text-cyan {
+  color: #00f2ff;
+  background: linear-gradient(135deg, #f0fdfa 0%, #67e8f9 30%, #38bdf8 65%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(0, 242, 255, 0.6)) drop-shadow(0 0 30px rgba(56, 189, 248, 0.4));
+}
+
+.neon-text-green {
+  color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #86efac 30%, #4ade80 65%, #16a34a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6)) drop-shadow(0 0 30px rgba(74, 222, 128, 0.4));
+}
+
+/* Neon Live Ticker Marquee Bar */
+.neon-ticker-bar {
+  background: rgba(6, 10, 20, 0.96);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 -1px 0 rgba(59, 130, 246, 0.2);
+  height: 38px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 45;
+}
+
+.neon-marquee-track {
+  display: flex;
+  white-space: nowrap;
+  animation: marqueeScroll 45s linear infinite;
+  will-change: transform;
+}
+
+.neon-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marqueeScroll {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+/* ==========================================================================
+   LUXURY HERO & BADGES (CLONED FROM GO.BREATHS.LIVE & ADS.BREATHS.LIVE)
+   ========================================================================== */
+
+.luxury-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 18px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(251, 191, 36, 0.1));
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  box-shadow: 0 0 28px rgba(249, 115, 22, 0.28), inset 0 0 14px rgba(249, 115, 22, 0.12);
+  color: #fed7aa;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow-luxury {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+/* Hiệu ứng chữ chạy phát sáng động Neon từ go.breaths.live */
+.neon-hero,
+.neon-title {
+  background: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #f8fafc 15%,
+    #c4b5fd 30%,
+    #38bdf8 48%,
+    #fde68a 65%,
+    #fbbf24 78%,
+    #ffffff 92%,
+    #f8fafc 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: neonHeadingFlow 5s linear infinite;
+  filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.35)) drop-shadow(0 0 28px rgba(56, 189, 248, 0.18));
+}
+
+.neon-hero-orange {
+  background: linear-gradient(
+    90deg,
+    #fff7ed 0%,
+    #fed7aa 15%,
+    #fb923c 35%,
+    #f97316 55%,
+    #f59e0b 72%,
+    #ea580c 88%,
+    #fff7ed 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: neonHeadingFlow 4.5s linear infinite;
+  filter: drop-shadow(0 0 18px rgba(249, 115, 22, 0.65)) drop-shadow(0 0 36px rgba(249, 115, 22, 0.4));
+}
+
+@keyframes neonHeadingFlow {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 250% center;
+  }
+}
+
+.neon-hero-title {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.025em;
+  text-shadow: 0 0 40px rgba(249, 115, 22, 0.35);
+}
+
+.glow-orb-purple {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow-orb-gold {
+  position: absolute;
+  width: 550px;
+  height: 550px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.16) 0%, rgba(251, 191, 36, 0.08) 50%, transparent 70%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+

@@ -77,3 +77,10 @@ npx wrangler pages deploy dist --project-name fcs-ai-workforce
 * `TENANT_MANAGER`: Điều hành quản lý lao động, duyệt kết quả đối soát chấm công VWW.
 * `RECRUITER`: Tiếp nhận hồ sơ, đặt lịch phỏng vấn và gửi tin nhắn AI chăm sóc Zalo/SMS.
 * `TENANT_VIEWER`: Xem báo cáo điều hành thời gian thực.
+
+---
+
+## 📖 HƯỚNG DẪN SỬ DỤNG GOLIVE
+👉 Chi tiết kịch bản trải nghiệm cho khách hàng với 3 tài khoản doanh nghiệp:  
+Xem tại: [HUONG_DAN_SU_DUNG_FCS_WORKFORCE.md](file:///d:/FCS-AI-WORKFORCE/HUONG_DAN_SU_DUNG_FCS_WORKFORCE.md)
+

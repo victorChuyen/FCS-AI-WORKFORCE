@@ -1,0 +1,21 @@
+[
+  { "code": "C3", "name": "C3. Lao động mới", "group": "LEAD_INTAKE", "role_scope": ["Leader Sale", "Sale", "Leader Marketing", "Manager", "Mkt"] },
+  { "code": "C3.1", "name": "C3.1. Số trùng", "group": "LEAD_INTAKE", "role_scope": ["Leader Sale", "Sale", "Mkt"] },
+  { "code": "C3.2", "name": "C3.2. Số rác", "group": "LEAD_INTAKE", "role_scope": ["Leader Sale", "Sale", "Mkt"] },
+  { "code": "L1", "name": "L1. Số lao động chia cho sale", "group": "SALE_NURTURE", "role_scope": ["Leader Sale", "Manager", "Sale"] },
+  { "code": "L1.1", "name": "L1.1. Tham khảo", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L1.2", "name": "L1.2. Chăm sóc lại", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L1.3", "name": "L1.3. Từ chối tiếp xúc. Không có nhu cầu", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L1.4", "name": "L1.4. TB, KNM, MB", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L1.5", "name": "L1.5. Thừa tuổi từ 45 tuổi trở lên", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L1.6", "name": "L1.6. Hẹn gọi lại", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L1.8", "name": "L1.8. Lao động thiếu tuổi", "group": "SALE_NURTURE", "role_scope": ["Sale", "Leader Sale"] },
+  { "code": "L2", "name": "L2. Lao động hẹn phỏng vấn", "group": "INTERVIEW", "role_scope": ["Hiện trường", "Sale", "Manager"] },
+  { "code": "L2.1", "name": "L2.1. Lao động đỗ phỏng vấn", "group": "INTERVIEW", "role_scope": ["Hiện trường", "Sale", "Manager"] },
+  { "code": "L2.2", "name": "L2.2. Lao động trượt phỏng vấn", "group": "INTERVIEW", "role_scope": ["Hiện trường", "Sale", "Manager"] },
+  { "code": "L2.3", "name": "L2.3. Lao động hẹn không đến phỏng vấn", "group": "INTERVIEW", "role_scope": ["Hiện trường", "Sale", "Manager"] },
+  { "code": "L3", "name": "L3. Lao động đang đi làm", "group": "EMPLOYMENT", "role_scope": ["Hiện trường", "Manager"] },
+  { "code": "L3.1", "name": "L3.1. Lao động nghỉ ngang", "group": "EMPLOYMENT", "role_scope": ["Hiện trường", "Manager"] },
+  { "code": "L3.2", "name": "L3.2. Lao động muốn chuyển công ty khác", "group": "EMPLOYMENT", "role_scope": ["Hiện trường", "Manager", "Sale"] },
+  { "code": "L4", "name": "L4. Lao động hết thời gian tính phí", "group": "SETTLEMENT", "role_scope": ["Kế toán", "Manager", "Admin"] }
+]
