@@ -8,31 +8,77 @@
  * ==============================================================================
  */
 
+/**
+ * Kiểm tra xem một email có quyền Admin hay không
+ * TỰ ĐỘNG MAP THEO QUYỀN GOOGLE SHEETS BẢN ĐỊA:
+ * Bất kỳ ai là Owner hoặc có quyền Editor trên Google Spreadsheet đều là Admin!
+ */
+function isSpreadsheetAdmin_(userEmail, ss) {
+  if (!userEmail) return false;
+  var emailNorm = userEmail.toString().trim().toLowerCase();
+
+  // 1. Danh sách Admin tĩnh được cấu hình
+  var adminList = (V2_CONFIG.ADMIN_EMAILS || []).map(function(e) { return e.toLowerCase(); });
+  if (adminList.indexOf(emailNorm) !== -1) return true;
+
+  // 2. Tự động kiểm tra quyền trên Google Spreadsheet thực tế (Owner & Editors)
+  try {
+    if (!ss) ss = getSpreadsheetV2_();
+    if (ss) {
+      var owner = ss.getOwner();
+      if (owner && owner.getEmail() && owner.getEmail().toLowerCase() === emailNorm) {
+        return true;
+      }
+      var editors = ss.getEditors();
+      for (var i = 0; i < editors.length; i++) {
+        if (editors[i].getEmail() && editors[i].getEmail().toLowerCase() === emailNorm) {
+          return true;
+        }
+      }
+    }
+  } catch(err) {
+    Logger.log("Lỗi kiểm tra quyền Sheet Admin: " + err.message);
+  }
+
+  return false;
+}
+
 function applyNativeGmailProtections_(ss) {
   if (!ss) ss = getSpreadsheetV2_();
   if (!ss) return;
 
-  var adminEmail = V2_CONFIG.SUPER_ADMIN_EMAIL;
-  var adminList = V2_CONFIG.ADMIN_EMAILS || [adminEmail, "victorchuyen68@gmail.com"];
-  
-  // Lấy thêm toàn bộ email Editor hiện hữu đã được Chairman share quyền trên Google Drive
+  // Lấy toàn bộ danh sách Admin từ cả cấu hình lẫn quyền Editor thật trên Google Sheets
+  var authorizedEditors = [];
+  (V2_CONFIG.ADMIN_EMAILS || []).forEach(function(em) {
+    if (em && authorizedEditors.indexOf(em.toLowerCase()) === -1) {
+      authorizedEditors.push(em.toLowerCase());
+    }
+  });
+
   try {
-    var driveEditors = ss.getEditors().map(function(u) { return u.getEmail().toLowerCase(); });
-    driveEditors.forEach(function(em) {
-      if (em && adminList.indexOf(em) === -1) {
-        adminList.push(em);
+    var owner = ss.getOwner();
+    if (owner && owner.getEmail()) {
+      var ownerEm = owner.getEmail().toLowerCase();
+      if (authorizedEditors.indexOf(ownerEm) === -1) authorizedEditors.push(ownerEm);
+    }
+    var driveEditors = ss.getEditors();
+    driveEditors.forEach(function(u) {
+      var em = u.getEmail() ? u.getEmail().toLowerCase() : "";
+      if (em && authorizedEditors.indexOf(em) === -1) {
+        authorizedEditors.push(em);
       }
     });
   } catch(e) {}
 
   var sheetsToProtectColA = [V2_CONFIG.TAB_WORKERS, V2_CONFIG.TAB_DEALS];
   
-  // 1. Bảo vệ Cột A (Worker ID & Deal ID) - Chế độ Cảnh báo (Warning Only) để Admin vẫn sửa/chèn dòng được
+  // 1. Bảo vệ Cột A (Worker ID & Deal ID) - Chế độ CẢNH BÁO (Warning Only)
+  // để mọi Admin (bao gồm dathao.188@gmail.com, tuanluong.51pm1@gmail.com, tranngocchuyen1980@gmail.com)
+  // đều có quyền Thêm / Sửa / Xóa dòng tự do, không bao giờ bị chặn cứng!
   sheetsToProtectColA.forEach(function(tabName) {
     var sheet = ss.getSheetByName(tabName);
     if (!sheet) return;
     
-    // Dọn dẹp protection cũ trên Cột A nếu có
     try {
       var existingProtections = sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
       for (var p = 0; p < existingProtections.length; p++) {
@@ -44,9 +90,7 @@ function applyNativeGmailProtections_(ss) {
     } catch(e) {}
 
     var idRange = sheet.getRange("A:A");
-    var protection = idRange.protect().setDescription("🔒 Bảo vệ Khóa chính ID - Cảnh báo khi chỉnh sửa");
-    
-    // Đặt chế độ Warning Only: Không chặn cứng, Admin vẫn sửa/xóa/chèn dòng bình thường!
+    var protection = idRange.protect().setDescription("🔒 Bảo vệ Khóa chính ID - Cảnh báo nhầm lẫn");
     protection.setWarningOnly(true);
   });
   
@@ -63,11 +107,11 @@ function applyNativeGmailProtections_(ss) {
       }
     } catch(e) {}
 
-    var protection = sheet.protect().setDescription("🔒 Danh mục chuẩn FCS - Cảnh báo khi chỉnh sửa");
+    var protection = sheet.protect().setDescription("🔒 Danh mục chuẩn FCS - Cảnh báo nhầm lẫn");
     protection.setWarningOnly(true);
   });
 
-  // 3. Khóa Sheet 03_AUDIT_LOG - Cho phép toàn bộ Admin sửa
+  // 3. Bảo vệ Sheet 03_AUDIT_LOG - Warning Only
   var auditSheet = ss.getSheetByName(V2_CONFIG.TAB_AUDIT_LOG);
   if (auditSheet) {
     try {
@@ -128,11 +172,42 @@ function UNLOCK_ALL_SHEET_PROTECTIONS() {
 }
 
 /**
+ * Tự động đồng bộ và mở quyền cho tất cả Gmail đang có quyền Editor trên Google Sheets
+ * Thực thi trực tiếp từ menu Apps Script: Quét Drive Editors -> Bỏ ổ khóa -> Mở quyền Full Admin
+ */
+function AUTO_SYNC_PERMISSIONS_FROM_DRIVE() {
+  var ss = getSpreadsheetV2_();
+  if (!ss) return "Không tìm thấy Spreadsheet.";
+
+  var ownerEmail = ss.getOwner() ? ss.getOwner().getEmail() : "N/A";
+  var editors = ss.getEditors().map(function(u) { return u.getEmail(); });
+  
+  // Gỡ bỏ toàn bộ khóa cũ cản trở
+  var unlockResult = removeNativeGmailProtections_(ss);
+  
+  var msg = "🎉 ĐÃ ĐỒNG BỘ QUYỀN TỰ ĐỘNG TỪ GOOGLE DRIVE THÀNH CÔNG!\n" +
+            "👑 Chủ sở hữu (Owner): " + ownerEmail + "\n" +
+            "👥 Danh sách Quản trị viên (Editors): " + editors.join(", ") + "\n" +
+            "🔓 Trạng thái bảo vệ: Đã gỡ bỏ " + unlockResult.removedRanges + " ổ khóa dải ô và " + unlockResult.removedSheets + " ổ khóa sheet.\n" +
+            "✅ Tất cả Admin trên đều có quyền Thêm, Sửa, Xóa dữ liệu ngang hàng với Chairman!";
+  
+  Logger.log(msg);
+  try {
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      "Đã mở quyền Full Admin cho " + editors.length + " tài khoản Editor!",
+      "🚀 FCS V2 SECURITY SYNC",
+      8
+    );
+  } catch(e) {}
+  return msg;
+}
+
+/**
  * ==============================================================================
- * CLEAN SLATE RESET SERVICE (DÀNH RIÊNG CHO PLATFORM SUPER ADMIN)
+ * CLEAN SLATE RESET SERVICE (DÀNH CHO TẤT CẢ ADMIN HỢP LỆ)
  * ==============================================================================
  * Xóa sạch toàn bộ dữ liệu nghiệp vụ để thiết lập lại chuẩn Clean Slate.
- * Chỉ có Super Admin (coach.chuyen@gmail.com, victorchuyen68@gmail.com) mới có quyền thực thi.
+ * Tất cả Quản trị viên (Owner & Editors của Sheet) đều có quyền thực thi.
  * Bắt buộc truyền confirm_code: "RESET-FCS-2026"
  */
 function handleCleanSlateResetV2_(payload, ss) {
@@ -142,14 +217,12 @@ function handleCleanSlateResetV2_(payload, ss) {
   payload = payload || {};
   var actorEmail = (payload.actor_email || "").toString().trim().toLowerCase();
   var confirmCode = (payload.confirm_code || payload.confirmation_code || "").toString().trim();
-  var isSuper = payload.is_super_admin === true ||
-                actorEmail === V2_CONFIG.SUPER_ADMIN_EMAIL.toLowerCase() ||
-                actorEmail === "victorchuyen68@gmail.com";
+  var isSuper = payload.is_super_admin === true || isSpreadsheetAdmin_(actorEmail, ss);
 
   if (!isSuper) {
     return {
       success: false,
-      error: "TỪ CHỐI TRUY CẬP: Chỉ tài khoản PLATFORM_SUPER_ADMIN (" + V2_CONFIG.SUPER_ADMIN_EMAIL + ") mới có quyền xóa sạch dữ liệu hệ thống!"
+      error: "TỪ CHỐI TRUY CẬP: Email '" + actorEmail + "' không thuộc danh sách Quản trị viên có quyền chỉnh sửa bảng tính!"
     };
   }
 

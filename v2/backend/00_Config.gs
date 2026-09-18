@@ -12,6 +12,9 @@ var V2_CONFIG = {
   SUPER_ADMIN_EMAIL: "coach.chuyen@gmail.com",
   ADMIN_EMAILS: [
     "coach.chuyen@gmail.com",
+    "tranngocchuyen1980@gmail.com",
+    "dathao.188@gmail.com",
+    "tuanluong.51pm1@gmail.com",
     "victorchuyen68@gmail.com",
     "ceo-fcs@breaths.live",
     "manager-fcs@breaths.live",
