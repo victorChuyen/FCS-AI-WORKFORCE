@@ -295,7 +295,7 @@ Khi trao đổi với người dùng:
             setIsOpen(true);
             setIsMinimized(false);
           }}
-          className="fixed bottom-5 right-5 z-40 flex items-center space-x-2.5 px-4 py-3 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white rounded-full shadow-2xl hover:shadow-blue-500/30 hover:scale-105 border border-blue-400/40 cursor-pointer transition-all duration-300 group"
+          className="fixed bottom-20 lg:bottom-6 left-4 sm:left-6 z-50 flex items-center space-x-2.5 px-4 py-3 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white rounded-full shadow-2xl hover:shadow-blue-500/30 hover:scale-105 border border-blue-400/40 cursor-pointer transition-all duration-300 group"
           title="Mở Trợ lý AI Bàn Giao & Support Kỹ Thuật (Lưu Google Sheet)"
         >
           <div className="relative">
@@ -317,8 +317,8 @@ Khi trao đổi với người dùng:
         <div
           className={`fixed z-50 transition-all duration-300 ${
             isMinimized
-              ? 'bottom-4 right-4 w-80 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 p-3'
-              : 'bottom-4 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[560px] md:w-[620px] h-[660px] max-h-[calc(100vh-2rem)] bg-slate-900 text-slate-100 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-col overflow-hidden backdrop-blur-xl'
+              ? 'bottom-20 lg:bottom-6 left-4 sm:left-6 w-80 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 p-3'
+              : 'bottom-20 lg:bottom-6 left-3 sm:left-6 w-[calc(100vw-1.5rem)] sm:w-[560px] md:w-[620px] max-w-[calc(100vw-1.5rem)] h-[660px] max-h-[calc(100vh-6.5rem)] bg-slate-900 text-slate-100 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-col overflow-hidden backdrop-blur-xl'
           }`}
         >
           {/* Header Bar */}
