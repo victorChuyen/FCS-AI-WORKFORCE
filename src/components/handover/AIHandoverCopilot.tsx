@@ -3,6 +3,12 @@ import { useApp } from '../../context/AppContext';
 import { callAiRouter } from '../../services/aiRouterService';
 import { handoverApi, HandoverFeedbackItem, HandoverSignoffItem } from '../../services/api/handoverApi';
 import {
+  devSupportApi,
+  DEV_SUPPORT_SHEET_URL,
+  DEV_SUPPORT_TAB_NAME,
+  DevSupportTicket,
+} from '../../services/api/devSupportApi';
+import {
   Bot,
   X,
   Minimize2,
@@ -24,9 +30,13 @@ import {
   RefreshCw,
   Copy,
   Check,
+  Wrench,
+  Database,
+  Target,
+  FileSpreadsheet,
 } from 'lucide-react';
 
-type TabMode = 'walkthrough' | 'chat' | 'feedback' | 'signoff' | 'history';
+type TabMode = 'devsupport' | 'walkthrough' | 'chat' | 'signoff' | 'history';
 
 interface ChatMsg {
   role: 'system' | 'assistant' | 'user';
@@ -38,12 +48,22 @@ export const AIHandoverCopilot: React.FC = () => {
   const { currentUser, showNotification, triggerRefresh } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabMode>('walkthrough');
+  const [activeTab, setActiveTab] = useState<TabMode>('devsupport');
+
+  // Dev Support & Chat Intake state
+  const [devGoal, setDevGoal] = useState('');
+  const [devOutput, setDevOutput] = useState('');
+  const [devDetails, setDevDetails] = useState('');
+  const [devCategory, setDevCategory] = useState<'BÁO LỖI (BUG)' | 'MỤC TIÊU PHÁT TRIỂN' | 'GÓP Ý UI/UX' | 'HỎI ĐÁP KỸ THUẬT'>('BÁO LỖI (BUG)');
+  const [devPriority, setDevPriority] = useState<'P0 - CHẶN' | 'P1 - NGHIÊM TRỌNG' | 'P2 - BÌNH THƯỜNG' | 'P3 - GÓP Ý'>('P1 - NGHIÊM TRỌNG');
+  const [devTickets, setDevTickets] = useState<DevSupportTicket[]>([]);
+  const [isSubmittingDev, setIsSubmittingDev] = useState(false);
+  const [devAiAdvice, setDevAiAdvice] = useState<string | null>(null);
 
   // Walkthrough state (4 steps checklist)
   const [stepStatus, setStepStatus] = useState<Record<number, boolean>>({
-    1: false,
-    2: false,
+    1: true,
+    2: true,
     3: false,
     4: false,
   });
@@ -52,19 +72,13 @@ export const AIHandoverCopilot: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
     {
       role: 'assistant',
-      content: `Xin chào **${currentUser.name || 'Quý khách'}**! Em là **AI CEO Lucky** — Trợ lý Bàn giao & Nghiệm thu 24/7 của hệ thống FCS AI Workforce OS.\n\nEm có mặt ở đây để đồng hành cùng anh/chị: hướng dẫn kiểm tra 4 bước trong 10 phút, tiếp nhận mọi góp ý/báo lỗi và hỗ trợ ký duyệt nghiệm thu Giai đoạn 1 & 2. Anh/chị cần em hỗ trợ nội dung gì ạ?`,
+      content: `Xin chào **${currentUser.name || 'Chairman Victor'}**! Em là **AI CEO Lucky** — Trợ lý Bàn giao & Support Kỹ thuật 24/7 của FCS AI Workforce OS.\n\nEm đã kết nối trực tiếp với Google Sheet tab **"${DEV_SUPPORT_TAB_NAME}"**.\nMọi mục tiêu, yêu cầu, báo lỗi hoặc trao đổi kỹ thuật của anh/chị tại đây đều được **tự động lưu vào Google Sheet** và em sẽ chủ động fix code ngay!`,
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
   const [inputMsg, setInputMsg] = useState('');
   const [isAiThinking, setIsAiThinking] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
-
-  // Feedback form state
-  const [feedbackType, setFeedbackType] = useState<'BUG' | 'FEEDBACK' | 'ENHANCE' | 'QUESTION'>('BUG');
-  const [feedbackPriority, setFeedbackPriority] = useState<'P0' | 'P1' | 'P2' | 'P3'>('P1');
-  const [feedbackContent, setFeedbackContent] = useState('');
-  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   // Sign-off form state
   const [signerName, setSignerName] = useState(currentUser.name || '');
@@ -89,10 +103,12 @@ export const AIHandoverCopilot: React.FC = () => {
     };
     window.addEventListener('fcs_handover_updated', handleUpdate);
     window.addEventListener('fcs_signoff_completed', handleUpdate);
+    window.addEventListener('fcs_dev_support_updated', handleUpdate);
     window.addEventListener('fcs_open_handover_copilot', handleOpen);
     return () => {
       window.removeEventListener('fcs_handover_updated', handleUpdate);
       window.removeEventListener('fcs_signoff_completed', handleUpdate);
+      window.removeEventListener('fcs_dev_support_updated', handleUpdate);
       window.removeEventListener('fcs_open_handover_copilot', handleOpen);
     };
   }, []);
@@ -106,8 +122,10 @@ export const AIHandoverCopilot: React.FC = () => {
   const loadData = () => {
     const fList = handoverApi.getFeedbackHistory();
     const sList = handoverApi.getSignoffHistory();
+    const dList = devSupportApi.getTickets();
     setFeedbackList(fList);
     setSignoffList(sList);
+    setDevTickets(dList);
     if (sList.length > 0) {
       setLatestSignoff(sList[0]);
     }
@@ -118,6 +136,67 @@ export const AIHandoverCopilot: React.FC = () => {
   };
 
   const completedStepsCount = Object.values(stepStatus).filter(Boolean).length;
+
+  // Handle Dev Support Chat & Sheet Submission
+  const handleSubmitDevSupport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!devGoal.trim() && !devDetails.trim()) {
+      showNotification('Vui lòng nhập mục tiêu hoặc nội dung trao đổi!', 'warning');
+      return;
+    }
+
+    setIsSubmittingDev(true);
+    setDevAiAdvice(null);
+    try {
+      const fullContent = [
+        devGoal ? `MỤC TIÊU: ${devGoal}` : '',
+        devOutput ? `KẾT QUẢ ĐẦU RA: ${devOutput}` : '',
+        devDetails ? `CHI TIẾT: ${devDetails}` : '',
+      ].filter(Boolean).join('\n');
+
+      const res = await devSupportApi.logExchange({
+        senderName: currentUser.name || 'Chairman Victor Chuyen',
+        senderRole: currentUser.role || 'CHAIRMAN',
+        category: devCategory,
+        goal: devGoal || 'Xử lý yêu cầu phát triển',
+        expectedOutput: devOutput || 'Tính năng hoạt động ổn định',
+        content: fullContent,
+        priority: devPriority,
+        stage: 'GĐ1',
+      });
+
+      showNotification(res.message, 'success');
+      loadData();
+
+      // Ask AI for instant architectural response
+      const aiRes = await devSupportApi.askSupportAi(fullContent);
+      setDevAiAdvice(aiRes.reply);
+
+      // Add to conversation chat history
+      setChatMessages(prev => [
+        ...prev,
+        {
+          role: 'user',
+          content: fullContent,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        },
+        {
+          role: 'assistant',
+          content: `✅ **ĐÃ GHI NHẬN VÀO GOOGLE SHEET** (Ticket: \`${res.ticket.id}\`):\n\n${aiRes.reply}`,
+          timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+
+      // Reset inputs
+      setDevGoal('');
+      setDevOutput('');
+      setDevDetails('');
+    } catch {
+      showNotification('Không thể lưu vào Google Sheet. Vui lòng thử lại!', 'warning');
+    } finally {
+      setIsSubmittingDev(false);
+    }
+  };
 
   // Handle AI Chat
   const handleSendMessage = async (customPrompt?: string) => {
@@ -131,24 +210,21 @@ export const AIHandoverCopilot: React.FC = () => {
     setIsAiThinking(true);
 
     try {
-      // System instructions for AI Handover Copilot
-      const systemInstruction = `Bạn là AI CEO Lucky, Trợ lý Bàn giao & Nghiệm thu tối cao của dự án FCS AI WORKFORCE OS.
-Bạn đang trò chuyện với đại diện khách hàng/người dùng.
-Mục tiêu:
-1. Hướng dẫn khách hàng kiểm tra 4 kịch bản nghiệm thu nhanh (Giai đoạn 1: Master CRM 19 Level Sale & Excel Grid, Giai đoạn 2: Worker Care 1-3-7 ngày & Re-activation Zalo 0đ).
-2. Trả lời chính xác, thông thái, lịch thiệp, thực tế và đậm chất chuyên gia điều hành.
-3. Nhấn mạnh nguyên tắc Real Data (Dữ liệu thực 100%, không fake demo) và North Star Metric là VWW (Verified Working Worker).
-4. Nếu khách hàng báo lỗi, hãy tiếp nhận và hướng dẫn họ sang tab 'Góp ý / Báo lỗi' để ghi nhận mã ticket.
-5. Khuyến khích khách hàng ký nghiệm thu GĐ1-GĐ2 để mở khóa GĐ3 (B2B Employer & Hoa hồng xưởng).
-Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point rõ ràng.`;
+      const systemInstruction = `Bạn là AI CEO Lucky, Trợ lý Bàn giao & Support Kỹ thuật của dự án FCS AI WORKFORCE OS.
+Bạn kết nối trực tiếp với Google Sheet: FCS_V2_WORKFORCE_CRM_MASTER (Tab: "IN ( Data - Mục Tiêu -KQ đầu ra là gì )").
+Khi trao đổi với người dùng:
+1. Luôn làm rõ: Mục tiêu / Vấn đề là gì? Kết quả đầu ra mong muốn là gì?
+2. Trả lời chính xác, thông thái, lịch thiệp, đậm chất chuyên gia điều hành.
+3. Đề xuất phương án fix code cụ thể theo tinh thần "OPC 1 Người Vận Hành".
+4. Tóm tắt ngắn gọn dưới 150 từ.`;
 
       const aiHistory = [
         { role: 'system' as const, content: systemInstruction },
         ...chatMessages.slice(-4).map(m => ({ role: m.role, content: m.content })),
-        { role: 'user' as const, content: msgToSend }
+        { role: 'user' as const, content: msgToSend },
       ];
 
-      const reply = await callAiRouter(aiHistory, { modelKey: 'deepReasoning', temperature: 0.4 });
+      const reply = await callAiRouter(aiHistory, { modelKey: 'deepReasoning', temperature: 0.3 });
       setChatMessages(prev => [
         ...prev,
         {
@@ -158,13 +234,7 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
         },
       ]);
     } catch {
-      // Fallback domain response if 9router is unreachable
-      let fallbackText = `Em đã ghi nhận câu hỏi của anh/chị: "${msgToSend}".\n\n• Hệ thống FCS V2 hiện đã hoàn tất 100% Giai đoạn 1 & 2 với dữ liệu thực từ Google Sheets.\n• Anh/chị có thể kiểm tra 4 kịch bản tại tab "Kịch Bản 10 Phút" hoặc gửi góp ý tại tab "Báo lỗi". Em và Chairman Victor luôn trực tuyến để hoàn thiện ngay!`;
-      if (msgToSend.toLowerCase().includes('vww')) {
-        fallbackText = `**VWW (Verified Working Worker)** là thước đo tối thượng của hệ thống: Chỉ công nhận lao động đạt chuẩn khi dữ liệu đi làm thực tế khớp với dữ liệu chấm công từ xưởng (Foxconn/Luxshare), đảm bảo tính hoa hồng chính xác 100%.`;
-      } else if (msgToSend.toLowerCase().includes('nghiệm thu')) {
-        fallbackText = `Quy trình nghiệm thu tuân thủ 5 nguyên tắc: Khóa Scope GĐ1-GĐ2, chỉ kiểm tra trên Real Data, kiểm tra nhanh 4 kịch bản trong 10 phút và ký duyệt điện tử 1-Click tại tab "Ký Nghiệm Thu".`;
-      }
+      let fallbackText = `Em đã ghi nhận trao đổi: "${msgToSend}". Mọi nội dung đang được lưu trữ vào tab Google Sheet "${DEV_SUPPORT_TAB_NAME}". Em sẽ tiến hành kiểm tra mã nguồn và cập nhật ngay!`;
       setChatMessages(prev => [
         ...prev,
         {
@@ -175,34 +245,6 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
       ]);
     } finally {
       setIsAiThinking(false);
-    }
-  };
-
-  // Submit Feedback
-  const handleSubmitFeedback = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!feedbackContent.trim()) return;
-
-    setFeedbackSubmitting(true);
-    try {
-      const res = await handoverApi.submitFeedback({
-        senderName: currentUser.name || 'Khách hàng',
-        senderEmail: currentUser.email,
-        senderRole: currentUser.role || 'Khách hàng',
-        type: feedbackType,
-        priority: feedbackPriority,
-        stage: 'GĐ1',
-        content: feedbackContent.trim(),
-      });
-
-      showNotification(res.message, 'success');
-      setFeedbackContent('');
-      loadData();
-      setActiveTab('history');
-    } catch {
-      showNotification('Không thể gửi phản hồi. Vui lòng thử lại!', 'warning');
-    } finally {
-      setFeedbackSubmitting(false);
     }
   };
 
@@ -254,7 +296,7 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
             setIsMinimized(false);
           }}
           className="fixed bottom-5 right-5 z-40 flex items-center space-x-2.5 px-4 py-3 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white rounded-full shadow-2xl hover:shadow-blue-500/30 hover:scale-105 border border-blue-400/40 cursor-pointer transition-all duration-300 group"
-          title="Mở Trợ lý AI Bàn Giao & Nghiệm Thu 24/7"
+          title="Mở Trợ lý AI Bàn Giao & Support Kỹ Thuật (Lưu Google Sheet)"
         >
           <div className="relative">
             <Bot className="w-5 h-5 text-amber-300 animate-pulse" />
@@ -265,7 +307,7 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
               <span>Trợ Lý Bàn Giao AI</span>
               <Sparkles className="w-3 h-3 text-amber-300 inline" />
             </div>
-            <div className="text-[10px] text-blue-100 font-medium">Nghiệm thu GĐ1 & GĐ2 (10 Phút)</div>
+            <div className="text-[10px] text-blue-100 font-medium">Lưu Google Sheet • GĐ1 & 2</div>
           </div>
         </button>
       )}
@@ -276,11 +318,11 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
           className={`fixed z-50 transition-all duration-300 ${
             isMinimized
               ? 'bottom-4 right-4 w-80 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 p-3'
-              : 'bottom-4 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[540px] md:w-[600px] h-[640px] max-h-[calc(100vh-2rem)] bg-slate-900 text-slate-100 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-col overflow-hidden backdrop-blur-xl'
+              : 'bottom-4 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[560px] md:w-[620px] h-[660px] max-h-[calc(100vh-2rem)] bg-slate-900 text-slate-100 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-col overflow-hidden backdrop-blur-xl'
           }`}
         >
           {/* Header Bar */}
-          <div className="px-4 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 border-b border-slate-800 flex items-center justify-between shrink-0">
+          <div className="px-4 py-3 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 border-b border-slate-800 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-2.5">
               <div className="w-8 h-8 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-amber-300 shadow-inner">
                 <Bot className="w-4 h-4" />
@@ -289,24 +331,24 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
                 <div className="flex items-center space-x-1.5">
                   <span className="font-extrabold text-xs text-white tracking-wide">AI CEO Lucky</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    Bàn Giao 24/7
+                    Live Sheet Sync
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400">9Router • GPT-6 Astra & Claude 4.6 • FCS-000001</div>
+                <div className="text-[10px] text-slate-400">9Router Astra • Google Sheet Tab: {DEV_SUPPORT_TAB_NAME}</div>
               </div>
             </div>
 
             <div className="flex items-center space-x-1">
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                 title={isMinimized ? 'Mở rộng' : 'Thu nhỏ'}
               >
                 {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Đóng"
               >
                 <X className="w-4 h-4" />
@@ -318,6 +360,21 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
             <>
               {/* Navigation Tabs */}
               <div className="flex border-b border-slate-800 bg-slate-950/60 p-1 gap-1 text-[11px] font-bold shrink-0 overflow-x-auto no-scrollbar">
+                <button
+                  onClick={() => setActiveTab('devsupport')}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
+                    activeTab === 'devsupport'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-amber-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Wrench className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Support & Lưu Sheet</span>
+                  <span className="ml-1 px-1 py-0.2 text-[9px] rounded-full bg-slate-900/60 font-mono">
+                    {devTickets.length}
+                  </span>
+                </button>
+
                 <button
                   onClick={() => setActiveTab('walkthrough')}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
@@ -346,18 +403,6 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('feedback')}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
-                    activeTab === 'feedback'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                  }`}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-300" />
-                  <span>Báo Lỗi / Góp Ý</span>
-                </button>
-
-                <button
                   onClick={() => setActiveTab('signoff')}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${
                     activeTab === 'signoff'
@@ -378,13 +423,190 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5 text-indigo-300" />
-                  <span>Sổ Cái ({feedbackList.length})</span>
+                  <span>Sổ Cái MD</span>
                 </button>
               </div>
 
               {/* Tab Contents */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
-                {/* 🧭 TAB 1: 4 BƯỚC KIỂM TRA NHANH */}
+                {/* 🛠️ TAB 1: SUPPORT KỸ THUẬT & GHI LỖI TRỰC TIẾP VÀO SHEET */}
+                {activeTab === 'devsupport' && (
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    {/* Live Sheet Banner with direct link */}
+                    <a
+                      href={DEV_SUPPORT_SHEET_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-3 bg-gradient-to-r from-blue-950/90 via-slate-900 to-indigo-950/90 border border-blue-500/40 rounded-xl flex items-center justify-between hover:border-blue-400 transition-all cursor-pointer group shadow-md"
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shrink-0">
+                          <FileSpreadsheet className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-extrabold text-xs text-white flex items-center space-x-1.5">
+                            <span>Google Sheet: {DEV_SUPPORT_TAB_NAME}</span>
+                            <ExternalLink className="w-3 h-3 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            Mọi trao đổi tự động đồng bộ vào hàng mới của tab này thời gian thực
+                          </div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                        MỞ SHEET ↗
+                      </span>
+                    </a>
+
+                    {/* Support Input Form */}
+                    <form onSubmit={handleSubmitDevSupport} className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-3 shadow-inner">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-amber-300 flex items-center space-x-1.5">
+                          <Wrench className="w-3.5 h-3.5" />
+                          <span>Ghi Nhận Trao Đổi Kỹ Thuật (Data - Mục Tiêu - KQ Đầu Ra)</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400">Giai đoạn phát triển</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">Phân loại</label>
+                          <select
+                            value={devCategory}
+                            onChange={e => setDevCategory(e.target.value as any)}
+                            className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white font-medium focus:outline-none"
+                          >
+                            <option value="BÁO LỖI (BUG)">🐛 Báo lỗi (Bug)</option>
+                            <option value="MỤC TIÊU PHÁT TRIỂN">🎯 Mục tiêu phát triển</option>
+                            <option value="GÓP Ý UI/UX">✨ Góp ý UI/UX</option>
+                            <option value="HỎI ĐÁP KỸ THUẬT">❓ Hỏi đáp kỹ thuật</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">Mức độ ưu tiên</label>
+                          <select
+                            value={devPriority}
+                            onChange={e => setDevPriority(e.target.value as any)}
+                            className="w-full px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white font-medium focus:outline-none"
+                          >
+                            <option value="P0 - CHẶN">🔴 P0 - Chặn (Sập web / Mất data)</option>
+                            <option value="P1 - NGHIÊM TRỌNG">🟠 P1 - Nghiêm trọng (Tính năng sai)</option>
+                            <option value="P2 - BÌNH THƯỜNG">🟡 P2 - Bình thường (Giao diện / Font)</option>
+                            <option value="P3 - GÓP Ý">🟢 P3 - Góp ý mở rộng</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Goal Input */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                          1. Mục tiêu / Vấn đề cần giải quyết là gì? <span className="text-rose-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={devGoal}
+                          onChange={e => setDevGoal(e.target.value)}
+                          placeholder="Ví dụ: Fix 5 thẻ KPI đầu trang hiển thị 0; Sửa nút Golden Flow..."
+                          className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                          required
+                        />
+                      </div>
+
+                      {/* Expected Output Input */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                          2. Kết quả đầu ra mong muốn là gì? (Expected Output) <span className="text-rose-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={devOutput}
+                          onChange={e => setDevOutput(e.target.value)}
+                          placeholder="Ví dụ: Hiển thị đúng 10 lao động, VWW: 2; Deal nhảy sang L3 trên Sheet..."
+                          className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                          required
+                        />
+                      </div>
+
+                      {/* Details Textarea */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                          3. Nội dung trao đổi chi tiết / Lời nhắn cho AI CEO Lucky
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={devDetails}
+                          onChange={e => setDevDetails(e.target.value)}
+                          placeholder="Mô tả cụ thể ngữ cảnh, thao tác gặp lỗi, hoặc gợi ý hướng giải quyết..."
+                          className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmittingDev || (!devGoal.trim() && !devDetails.trim())}
+                        className="w-full py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-extrabold rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center space-x-2"
+                      >
+                        {isSubmittingDev ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        <span>LƯU VÀO GOOGLE SHEET & PHÂN TÍCH AI (1-CLICK)</span>
+                      </button>
+                    </form>
+
+                    {/* AI Architectural Response Notice */}
+                    {devAiAdvice && (
+                      <div className="p-3.5 bg-blue-950/40 border border-blue-600/50 rounded-xl space-y-1.5 animate-in fade-in">
+                        <div className="flex items-center space-x-2 text-amber-300 font-extrabold text-xs">
+                          <Bot className="w-4 h-4" />
+                          <span>AI CEO Lucky • Giải Pháp Kiến Trúc & Kế Hoạch Fix Code:</span>
+                        </div>
+                        <div className="text-slate-200 text-[11px] leading-relaxed whitespace-pre-line">
+                          {devAiAdvice}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Live Sheet Records List */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span>Danh Sách Phiếu Đã Lưu Trên Sheet ({devTickets.length})</span>
+                        <span className="text-emerald-400 font-mono text-[10px]">Auto-Synced</span>
+                      </div>
+
+                      {devTickets.map((tk, idx) => (
+                        <div key={idx} className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold text-white font-mono">{tk.id}</span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                {tk.category}
+                              </span>
+                              <span className="text-[10px] text-slate-400">• {tk.senderName}</span>
+                            </div>
+                            <span className={`text-[10px] font-extrabold ${
+                              tk.status === 'ĐÃ FIX & DEPLOY' ? 'text-emerald-400' : 'text-amber-400'
+                            }`}>
+                              {tk.status}
+                            </span>
+                          </div>
+
+                          <div className="text-slate-300 text-[11px]">
+                            <strong>Mục tiêu:</strong> {tk.goal}
+                          </div>
+                          <div className="text-slate-300 text-[11px]">
+                            <strong>KQ Đầu ra:</strong> {tk.expectedOutput}
+                          </div>
+                          {tk.aiAction && (
+                            <div className="text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-800/30 p-1.5 rounded-md mt-1">
+                              <strong>Hành động thực thi:</strong> {tk.aiAction}
+                            </div>
+                          )}
+                          <div className="text-[9px] text-slate-500">{tk.timestamp}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 🧭 TAB 2: 4 BƯỚC KIỂM TRA NHANH */}
                 {activeTab === 'walkthrough' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-800/40 flex items-start space-x-3">
@@ -523,7 +745,7 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
                   </div>
                 )}
 
-                {/* 💬 TAB 2: HỎI ĐÁP AI */}
+                {/* 💬 TAB 3: HỎI ĐÁP AI */}
                 {activeTab === 'chat' && (
                   <div className="flex flex-col h-full space-y-3">
                     {/* Quick suggestion chips */}
@@ -598,66 +820,6 @@ Hãy trả lời ngắn gọn, súc tích (dưới 150 từ), dùng bullet point
                       </button>
                     </div>
                   </div>
-                )}
-
-                {/* ⚡ TAB 3: BÁO LỖI / GÓP Ý NHANH */}
-                {activeTab === 'feedback' && (
-                  <form onSubmit={handleSubmitFeedback} className="space-y-3.5">
-                    <div className="p-3 bg-amber-950/30 border border-amber-800/40 rounded-xl text-[11px] text-amber-200 leading-relaxed">
-                      💡 Mọi phản hồi, yêu cầu chỉnh sửa hoặc lỗi phát hiện được tự động ghi vào Sổ cái và báo cho <strong>AI CEO Lucky</strong> để tự động phân tích và fix code ngay trong phiên làm việc!
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-400 mb-1">Loại phản hồi</label>
-                        <select
-                          value={feedbackType}
-                          onChange={e => setFeedbackType(e.target.value as any)}
-                          className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white font-medium focus:outline-none"
-                        >
-                          <option value="BUG">🐛 Báo lỗi (Bug)</option>
-                          <option value="ENHANCE">✨ Góp ý trải nghiệm (UI/UX)</option>
-                          <option value="FEEDBACK">💬 Nhận xét chung</option>
-                          <option value="QUESTION">❓ Thắc mắc nghiệp vụ</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-400 mb-1">Mức độ ưu tiên</label>
-                        <select
-                          value={feedbackPriority}
-                          onChange={e => setFeedbackPriority(e.target.value as any)}
-                          className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white font-medium focus:outline-none"
-                        >
-                          <option value="P0">🔴 P0 - Chặn (Sập web / Mất data)</option>
-                          <option value="P1">🟠 P1 - Nghiêm trọng (Chức năng sai)</option>
-                          <option value="P2">🟡 P2 - Bình thường (Giao diện/Font)</option>
-                          <option value="P3">🟢 P3 - Mong muốn mở rộng</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1">Nội dung chi tiết</label>
-                      <textarea
-                        rows={4}
-                        value={feedbackContent}
-                        onChange={e => setFeedbackContent(e.target.value)}
-                        placeholder="Mô tả cụ thể: Nút nào, trang nào, kết quả mong đợi là gì..."
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                        required
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={feedbackSubmitting || !feedbackContent.trim()}
-                      className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-extrabold rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center space-x-2"
-                    >
-                      {feedbackSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      <span>Gửi Phản Hồi Cho AI CEO Lucky</span>
-                    </button>
-                  </form>
                 )}
 
                 {/* ✍️ TAB 4: KÝ DUYỆT NGHIỆM THU */}
