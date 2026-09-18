@@ -9,6 +9,7 @@ import { FloatingVipContact } from '../components/common/FloatingVipContact';
 import { CreateWorkerModal } from '../components/workers/CreateWorkerModal';
 import { DocsModal } from '../components/common/DocsModal';
 import { SaaSRoleGuideModal } from '../components/common/SaaSRoleGuideModal';
+import { AIHandoverCopilot } from '../components/handover/AIHandoverCopilot';
 import { AlertCircle, CheckCircle, Info, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../config/env';
 import { useAppNavigate } from '../hooks/useNavigate';
@@ -124,6 +125,7 @@ export const AppLayout: React.FC = () => {
 
         <AppFooter onNavigate={navigateTo} />
         <FloatingVipContact />
+        <AIHandoverCopilot />
         <CreateWorkerModal isOpen={showCreateWorkerModal} onClose={() => setShowCreateWorkerModal(false)} />
         <DocsModal isOpen={showDocsModal} onClose={() => setShowDocsModal(false)} />
         <SaaSRoleGuideModal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)} />

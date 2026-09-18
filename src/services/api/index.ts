@@ -11,6 +11,7 @@ import { reviewApi } from './reviewApi';
 import { goldenFlowApi } from './goldenFlowApi';
 import { authApi } from './authApi';
 import { dealApi } from './dealApi';
+import { handoverApi } from './handoverApi';
 
 export const realApi = {
   isMock: false,
@@ -28,6 +29,7 @@ export const realApi = {
   ...goldenFlowApi,
   ...authApi,
   ...dealApi,
+  ...handoverApi,
 
   // Demo Data Lifecycle Control (Real API Stubs)
   async clearDemoData() {

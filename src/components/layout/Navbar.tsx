@@ -21,6 +21,8 @@ import {
   Menu,
   X,
   ExternalLink,
+  Sparkles,
+  Bot,
 } from 'lucide-react';
 import { AccountModal } from '../common/AccountModal';
 
@@ -272,6 +274,21 @@ export const Navbar: React.FC = () => {
                 <Compass className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                 <span className="hidden 2xl:inline">HƯỚNG DẪN SAAS</span>
                 <span className="inline 2xl:hidden">H.Dẫn</span>
+              </button>
+
+              {/* AI Handover & Feedback Button */}
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('fcs_open_handover_copilot'));
+                }}
+                className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 hover:from-slate-800 hover:to-indigo-900 text-amber-300 border border-blue-400/40 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 shadow-md group"
+                title="Mở Trợ lý AI Bàn Giao & Nghiệm Thu GĐ1 & GĐ2"
+              >
+                <Bot className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-pulse" />
+                <span className="hidden sm:inline">BÀN GIAO AI</span>
+                <span className="hidden xl:inline px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono">
+                  GĐ1-2
+                </span>
               </button>
 
               {/* Docs / Google Sheets Architecture Modal */}
