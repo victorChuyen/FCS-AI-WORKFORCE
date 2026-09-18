@@ -10,6 +10,13 @@ var V2_CONFIG = {
   SYSTEM_NAME: "FCS AI WORKFORCE OS V2",
   SCHEMA_VERSION: "2.1.0",
   SUPER_ADMIN_EMAIL: "coach.chuyen@gmail.com",
+  ADMIN_EMAILS: [
+    "coach.chuyen@gmail.com",
+    "victorchuyen68@gmail.com",
+    "ceo-fcs@breaths.live",
+    "manager-fcs@breaths.live",
+    "accountant-fcs@breaths.live"
+  ],
   PILOT_TENANT_ID: "FCS-000001",
   SPREADSHEET_ID: "1YAVNiPtAiYrxEThvIgWuR0PAHJbDCDqrXCz5SNwrxXE",
   

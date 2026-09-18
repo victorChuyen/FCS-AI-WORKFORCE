@@ -19,6 +19,13 @@ var V2_CONFIG = {
   SYSTEM_NAME: "FCS AI WORKFORCE OS V2",
   SCHEMA_VERSION: "2.1.0",
   SUPER_ADMIN_EMAIL: "coach.chuyen@gmail.com",
+  ADMIN_EMAILS: [
+    "coach.chuyen@gmail.com",
+    "victorchuyen68@gmail.com",
+    "ceo-fcs@breaths.live",
+    "manager-fcs@breaths.live",
+    "accountant-fcs@breaths.live"
+  ],
   PILOT_TENANT_ID: "FCS-000001",
   SPREADSHEET_ID: "1YAVNiPtAiYrxEThvIgWuR0PAHJbDCDqrXCz5SNwrxXE",
   
@@ -627,15 +634,30 @@ function handleListAuditLogsV2_(params, ss) {
  */
 
 function applyNativeGmailProtections_(ss) {
+  if (!ss) ss = getSpreadsheetV2_();
+  if (!ss) return;
+
   var adminEmail = V2_CONFIG.SUPER_ADMIN_EMAIL;
+  var adminList = V2_CONFIG.ADMIN_EMAILS || [adminEmail, "victorchuyen68@gmail.com"];
+  
+  // Lấy thêm toàn bộ email Editor hiện hữu đã được Chairman share quyền trên Google Drive
+  try {
+    var driveEditors = ss.getEditors().map(function(u) { return u.getEmail().toLowerCase(); });
+    driveEditors.forEach(function(em) {
+      if (em && adminList.indexOf(em) === -1) {
+        adminList.push(em);
+      }
+    });
+  } catch(e) {}
+
   var sheetsToProtectColA = [V2_CONFIG.TAB_WORKERS, V2_CONFIG.TAB_DEALS];
   
-  // 1. Khóa Cột A (Worker ID & Deal ID)
+  // 1. Bảo vệ Cột A (Worker ID & Deal ID) - Chế độ Cảnh báo (Warning Only) để Admin vẫn sửa/chèn dòng được
   sheetsToProtectColA.forEach(function(tabName) {
     var sheet = ss.getSheetByName(tabName);
     if (!sheet) return;
     
-    // Dọn dẹp protection cũ trên Cột A nếu có để chống chồng lấn
+    // Dọn dẹp protection cũ trên Cột A nếu có
     try {
       var existingProtections = sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
       for (var p = 0; p < existingProtections.length; p++) {
@@ -647,17 +669,13 @@ function applyNativeGmailProtections_(ss) {
     } catch(e) {}
 
     var idRange = sheet.getRange("A:A");
-    var protection = idRange.protect().setDescription("🔒 Khóa Khóa chính ID - Chỉ Admin " + adminEmail + " có quyền sửa");
+    var protection = idRange.protect().setDescription("🔒 Bảo vệ Khóa chính ID - Cảnh báo khi chỉnh sửa");
     
-    // Đảm bảo chỉ có adminEmail có quyền sửa
-    protection.removeEditors(protection.getEditors());
-    protection.addEditor(adminEmail);
-    if (protection.canDomainEdit()) {
-      protection.setDomainEdit(false);
-    }
+    // Đặt chế độ Warning Only: Không chặn cứng, Admin vẫn sửa/xóa/chèn dòng bình thường!
+    protection.setWarningOnly(true);
   });
   
-  // 2. Khóa toàn bộ Sheet Danh mục chuẩn (COMPANY, BRANCH, LEVEL_SALE)
+  // 2. Bảo vệ Danh mục chuẩn (COMPANY, BRANCH, LEVEL_SALE) - Warning Only
   var taxonomySheets = [V2_CONFIG.TAB_BRANCHES, V2_CONFIG.TAB_COMPANIES, V2_CONFIG.TAB_LEVEL_SALE];
   taxonomySheets.forEach(function(tabName) {
     var sheet = ss.getSheetByName(tabName);
@@ -670,15 +688,11 @@ function applyNativeGmailProtections_(ss) {
       }
     } catch(e) {}
 
-    var protection = sheet.protect().setDescription("🔒 Khóa Danh mục chuẩn - Chỉ Admin " + adminEmail + " có quyền sửa");
-    protection.removeEditors(protection.getEditors());
-    protection.addEditor(adminEmail);
-    if (protection.canDomainEdit()) {
-      protection.setDomainEdit(false);
-    }
+    var protection = sheet.protect().setDescription("🔒 Danh mục chuẩn FCS - Cảnh báo khi chỉnh sửa");
+    protection.setWarningOnly(true);
   });
 
-  // 3. Khóa toàn bộ Sheet 03_AUDIT_LOG (Chống chỉnh sửa vết kiểm toán)
+  // 3. Khóa Sheet 03_AUDIT_LOG - Cho phép toàn bộ Admin sửa
   var auditSheet = ss.getSheetByName(V2_CONFIG.TAB_AUDIT_LOG);
   if (auditSheet) {
     try {
@@ -688,13 +702,54 @@ function applyNativeGmailProtections_(ss) {
       }
     } catch(e) {}
 
-    var auditProtection = auditSheet.protect().setDescription("🔒 Khóa Sổ cái Kiểm toán - Bất biến thời gian thực");
-    auditProtection.removeEditors(auditProtection.getEditors());
-    auditProtection.addEditor(adminEmail);
-    if (auditProtection.canDomainEdit()) {
-      auditProtection.setDomainEdit(false);
-    }
+    var auditProtection = auditSheet.protect().setDescription("🔒 Sổ cái Kiểm toán FCS V2");
+    auditProtection.setWarningOnly(true);
   }
+}
+
+/**
+ * Gỡ bỏ toàn bộ Range Protections và Sheet Protections trên toàn bộ bảng tính
+ * Dành cho Chairman và Admin khi muốn mở hoàn toàn quyền Thêm / Sửa / Xóa cho các Admin
+ */
+function removeNativeGmailProtections_(ss) {
+  if (!ss) ss = getSpreadsheetV2_();
+  if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet." };
+
+  var sheets = ss.getSheets();
+  var removedRanges = 0;
+  var removedSheets = 0;
+
+  sheets.forEach(function(sh) {
+    try {
+      var rangeProtections = sh.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+      for (var i = 0; i < rangeProtections.length; i++) {
+        rangeProtections[i].remove();
+        removedRanges++;
+      }
+    } catch(e) {}
+
+    try {
+      var sheetProtections = sh.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+      for (var j = 0; j < sheetProtections.length; j++) {
+        sheetProtections[j].remove();
+        removedSheets++;
+      }
+    } catch(e) {}
+  });
+
+  return {
+    success: true,
+    message: "ĐÃ MỞ KHÓA HOÀN TOÀN! Đã gỡ bỏ " + removedRanges + " dải ô bảo vệ và " + removedSheets + " bảng tính bảo vệ. Tất cả Admin có quyền Editor đều đã có thể Thêm / Sửa / Xóa bình thường!",
+    removedRanges: removedRanges,
+    removedSheets: removedSheets
+  };
+}
+
+/**
+ * Hàm thực thi trực tiếp từ thanh công cụ Run của Google Apps Script Editor
+ */
+function UNLOCK_ALL_SHEET_PROTECTIONS() {
+  return removeNativeGmailProtections_();
 }
 
 /**
@@ -4149,15 +4204,22 @@ function onEdit(e) {
       return;
     }
 
-    // 2. Chống sửa Khóa chính (Cột A - ID) trên 01_MASTER_WORKERS và 02_CRM_DEALS_2026
+    // 2. Kiểm soát Khóa chính (Cột A - ID) trên 01_MASTER_WORKERS và 02_CRM_DEALS_2026
     if (col === 1 && (sheetName === V2_CONFIG.TAB_WORKERS || sheetName === V2_CONFIG.TAB_DEALS)) {
-      range.setValue(e.oldValue !== undefined ? e.oldValue : "");
-      SpreadsheetApp.getActiveSpreadsheet().toast(
-        "CẢNH BÁO: Cột A (Mã định danh ID) bị khóa bất biến! Thao tác đã được tự động hoàn tác.",
-        "⛔ BẢO MẬT FCS V2",
-        6
-      );
-      return;
+      var newVal = (range.getValue() || "").toString().trim();
+      // Nếu người dùng nhập mã ID chuẩn (WK- hoặc DL-) thì cho phép lưu bình thường
+      if (newVal.indexOf("WK-") === 0 || newVal.indexOf("DL-") === 0) {
+        // Cho phép nhập hợp lệ, không revert
+      } else if (!newVal && e.oldValue) {
+        // Nếu xóa mất ID cũ của dòng đang có, nhắc nhở giữ lại
+        range.setValue(e.oldValue);
+        SpreadsheetApp.getActiveSpreadsheet().toast(
+          "Nhắc nhở: Cột A là Mã định danh ID bắt buộc của hồ sơ.",
+          "ℹ️ BẢO VỆ DỮ LIỆU FCS",
+          4
+        );
+        return;
+      }
     }
 
     // 3. Tự động cập nhật cột updated_at & updated_by trên dòng được chỉnh sửa
@@ -4269,6 +4331,12 @@ function handleRequestV2_(e, method) {
 
       case "v2.system.setup":
         result = setupV2Platform(ss);
+        break;
+
+      case "v2.system.unlock_protections":
+      case "v2.system.unlock":
+      case "system.unlock":
+        result = removeNativeGmailProtections_(ss);
         break;
 
       case "v2.system.reset":

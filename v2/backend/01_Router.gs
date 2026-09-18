@@ -75,6 +75,12 @@ function handleRequestV2_(e, method) {
         result = setupV2Platform(ss);
         break;
 
+      case "v2.system.unlock_protections":
+      case "v2.system.unlock":
+      case "system.unlock":
+        result = removeNativeGmailProtections_(ss);
+        break;
+
       case "v2.system.reset":
       case "system.reset":
         result = handleCleanSlateResetV2_(requestPayload, ss);

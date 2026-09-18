@@ -34,15 +34,22 @@ function onEdit(e) {
       return;
     }
 
-    // 2. Chống sửa Khóa chính (Cột A - ID) trên 01_MASTER_WORKERS và 02_CRM_DEALS_2026
+    // 2. Kiểm soát Khóa chính (Cột A - ID) trên 01_MASTER_WORKERS và 02_CRM_DEALS_2026
     if (col === 1 && (sheetName === V2_CONFIG.TAB_WORKERS || sheetName === V2_CONFIG.TAB_DEALS)) {
-      range.setValue(e.oldValue !== undefined ? e.oldValue : "");
-      SpreadsheetApp.getActiveSpreadsheet().toast(
-        "CẢNH BÁO: Cột A (Mã định danh ID) bị khóa bất biến! Thao tác đã được tự động hoàn tác.",
-        "⛔ BẢO MẬT FCS V2",
-        6
-      );
-      return;
+      var newVal = (range.getValue() || "").toString().trim();
+      // Nếu người dùng nhập mã ID chuẩn (WK- hoặc DL-) thì cho phép lưu bình thường
+      if (newVal.indexOf("WK-") === 0 || newVal.indexOf("DL-") === 0) {
+        // Cho phép nhập hợp lệ, không revert
+      } else if (!newVal && e.oldValue) {
+        // Nếu xóa mất ID cũ của dòng đang có, nhắc nhở giữ lại
+        range.setValue(e.oldValue);
+        SpreadsheetApp.getActiveSpreadsheet().toast(
+          "Nhắc nhở: Cột A là Mã định danh ID bắt buộc của hồ sơ.",
+          "ℹ️ BẢO VỆ DỮ LIỆU FCS",
+          4
+        );
+        return;
+      }
     }
 
     // 3. Tự động cập nhật cột updated_at & updated_by trên dòng được chỉnh sửa
