@@ -3119,9 +3119,9 @@ function handleBatchImportWorkersV2_(payload, ss) {
     var dealRow = new Array(22).fill("");
     dealRow[0] = dealId;
     dealRow[1] = workerId;
-    dealRow[2] = "=IFERROR(VLOOKUP(B" + currentDealRowIndex + ", '01_MASTER_WORKERS'!A:C, 3, FALSE), \"\")";
-    dealRow[3] = "=IFERROR(VLOOKUP(B" + currentDealRowIndex + ", '01_MASTER_WORKERS'!A:T, 20, FALSE), \"\")";
-    dealRow[4] = "=IFERROR(VLOOKUP(B" + currentDealRowIndex + ", '01_MASTER_WORKERS'!A:F, 6, FALSE), \"\")";
+    dealRow[2] = rawName || (item.full_name || "");
+    dealRow[3] = rawPhone || (item.phone || "");
+    dealRow[4] = rawCccd || (item.cccd || "");
     dealRow[5] = targetComp;
     dealRow[6] = branch;
     dealRow[7] = targetStage;

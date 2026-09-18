@@ -5,7 +5,7 @@
 
 ---
 
-## ⚡ 6 NGUYÊN TẮC BẮT BUỘC TUÂN THỦ (NON-NEGOTIABLE LAWS)
+## ⚡ 10 NGUYÊN TẮC BẮT BUỘC TUÂN THỦ (NON-NEGOTIABLE LAWS)
 
 ### 🔴 ĐIỀU 1: ĐỌC FILE NÀY ĐẦU TIÊN KHI BẮT ĐẦU MỌI PHIÊN LÀM VIỆC
 Tất cả AI Agent khi khởi động phiên làm việc mới tại `D:\FCS-AI-WORKFORCE` **BẮT BUỘC PHẢI ĐỌC FILE NÀY (`D:\FCS-AI-WORKFORCE\.agents\AGENTS.md`)**, `FCS_AI_WORKFORCE_OS_PROJECT_MASTER.md` và `FCS_ANTIGRAVITY_EXECUTION_HANDOFF_2026-09-17.md`. Không đoán mò, không làm sai lệch kiến trúc lõi.
@@ -62,7 +62,22 @@ Tất cả AI Agent khi khởi động phiên làm việc mới tại `D:\FCS-AI
   - 📑 **Mass Processing & Worker CV Parsing (1M Context):** `ag/gemini-3.8-flash`
   - 🛠️ **Apps Script & Database Automation:** `kr/qwen3-coder-next`
   - 🚀 **Ultra-fast Micro-tasks (500+ tokens/s):** `groq/llama-3.3-70b-versatile`
-- **Cụm tài nguyên nền tảng:** 31 Provider Connections xoay vòng (11 Antigravity OAuths, 2 Codex OAuths, 4 GitHub OAuths, 3 Nvidia NIM, 3 Groq, 4 Ollama Nodes, 1 Kiro, 1 BytePlus) đảm bảo 0% gián đoạn và chống 429 tuyệt đối.
+### 🔴 ĐIỀU 10: TÔN CHỈ KIẾN TRÚC DỮ LIỆU — CÁI NÀO LÀ GỐC & CÁI NÀO SINH RA TỪ LOGIC VẬN HÀNH
+* **Văn bản quy chuẩn toàn diện:** [.agents/rules/MASTER_DATA_ARCHITECTURE_AND_PIPELINE_GOVERNANCE_RULE.md](file:///D:/FCS-AI-WORKFORCE/.agents/rules/MASTER_DATA_ARCHITECTURE_AND_PIPELINE_GOVERNANCE_RULE.md)
+* **Bản kiểm điểm của AI CEO Lucky:** Nghiêm túc nhận lỗi sơ đảng khi để bảng Deal có lỗi `#ERROR!` trong khi bảng `01_MASTER_WORKERS` trống rỗng. Khắc cốt ghi tâm 5 nguyên tắc bất biến bên dưới.
+- **Nguyên tắc phân định Gốc - Ngọn (Master Data vs Operational Transactions):**
+  - **`01_MASTER_WORKERS` LÀ THỰC THỂ GỐC (GROUND TRUTH):** Mỗi con người chỉ có 1 hồ sơ nhân thân duy nhất với mã định danh bất biến `WK-XXXXXX` (34 cột). Bảng Gốc phải luôn được nạp trước tiên làm nền móng độc lập. Cấm tuyệt đối bảng Deal có dữ liệu mà bảng Worker lại trống rỗng!
+  - **`02_CRM_DEALS_2026` LÀ GIAO DỊCH SINH RA TỪ VẬN HÀNH (DERIVED TRANSACTIONS):** Deal là tiến trình tuyển dụng cụ thể theo thời gian (`DL-2026-XXXXXX`), trỏ về `worker_id`. Một worker có thể có nhiều deals theo các đợt tuyển dụng khác nhau.
+- **CẤM TUYỆT ĐỐI DÙNG CÔNG THỨC VLOOKUP TRONG BẢNG DEAL (ZERO VLOOKUP IN TRANSACTIONS):**
+  - Cột Họ tên (`full_name`), SĐT (`phone`), CCCD (`cccd`) trên bảng Deal bắt buộc phải lưu dưới dạng **GIÁ TRỊ TĨNH SNAPSHOT (Snapshot Values)** lấy trực tiếp từ Worker Object tại thời điểm phát sinh giao dịch.
+  - Nghiêm cấm 100% việc chèn công thức `=IFERROR(VLOOKUP(...), "")` vào các ô dữ liệu của Deal, chống sụp đổ hệ thống `#ERROR!` dây chuyền.
+- **Tách biệt tuyệt đối 2 luồng nạp dữ liệu:**
+  - Luồng nạp Master Data (công nhân xưởng): Nạp độc lập vào `01_MASTER_WORKERS`, `07_ASSIGNMENTS`, `08_ATTENDANCE_RAW`, cấm tự động sinh deals ảo!
+  - Luồng nạp Marketing Intake (`v2.batch.import`): Chỉ áp dụng cho ứng viên mới chưa có mã công nhân.
+- **Thước đo VWW phải sinh ra từ đối soát thật (Reconciliation Engine):**
+  - VWW không gõ tay hay suy diễn. VWW chỉ được kích hoạt khi Lệnh phân bổ xưởng (`07_ASSIGNMENTS`) khớp với Dữ liệu chấm công máy nhà máy (`08_ATTENDANCE_RAW`) đạt $\ge 15$ công.
+- **Tự động thừa hưởng quyền Google Drive (Native Permission Mapping):**
+  - Code GS tự động cấp quyền Full Admin cho tất cả Owner & Editors trên Google Sheet (`coach.chuyen@gmail.com`, `dathao.188@gmail.com`, `tuanluong.51pm1@gmail.com`, `tranngocchuyen1980@gmail.com`). Chỉ chạy chế độ Cảnh báo (`setWarningOnly(true)`), cấm lệnh `removeEditors()` tước quyền Admin.
 
 ---
 
@@ -72,6 +87,8 @@ Tất cả AI Agent khi khởi động phiên làm việc mới tại `D:\FCS-AI
 D:/FCS-AI-WORKFORCE/
 ├── .agents/
 │   ├── AGENTS.md                                     ← [SINGLE SOURCE OF TRUTH] Master directive
+│   ├── rules/
+│   │   └── MASTER_DATA_ARCHITECTURE_AND_PIPELINE_GOVERNANCE_RULE.md ← Master Rule Kiến trúc Dữ liệu Gốc & Giao dịch
 │   └── skills/
 │       └── fcs-ai-workforce-orchestrator/            ← Skill điều phối tự động toàn diện
 ├── backend/
