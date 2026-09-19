@@ -34,7 +34,7 @@ export const GoldenFlowLiveRunner: React.FC = () => {
     {
       step: 1,
       name: 'Tiếp nhận hồ sơ',
-      table: '04_WORKERS_MASTER',
+      table: '01_MASTER_WORKERS',
       desc: 'Cấp mã Worker ID duy nhất, kiểm tra trùng lặp SĐT & CCCD',
       icon: UserCheck,
     },
@@ -69,7 +69,7 @@ export const GoldenFlowLiveRunner: React.FC = () => {
     {
       step: 6,
       name: 'Đạt chuẩn VWW',
-      table: '04_WORKERS_MASTER',
+      table: '02_CRM_DEALS_2026',
       desc: 'Đóng dấu kiểm định Verified Working Worker (VWW)',
       icon: Award,
     },

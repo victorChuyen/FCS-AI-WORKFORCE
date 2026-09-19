@@ -1,6 +1,11 @@
+import { geminiPool, GeminiChatMessage } from './geminiPoolService';
+
 /**
- * 🚀 FCS AI Workforce OS — 9Router AI Gateway Integration Service
- * Tự động phân luồng: Local Gateway (nếu localhost) -> Cloud Gateway -> Deep Domain Fallback
+ * 🚀 FCS AI Workforce OS — 9Router AI Gateway & 24/7 Gemini Multi-Key Pool
+ * Thứ tự ưu tiên:
+ * 1. 24/7 Cloud Gemini Multi-Key Pool (13 Keys Google SOTA, trực tiếp HTTPS, chạy 24/7 cả khi máy tắt)
+ * 2. Local/Tunnel 9Router Gateway (khi đang ở môi trường dev local có bật 9router)
+ * 3. Deep Domain Knowledge Base (Offline fallback hoàn hảo về BA 1.5 & VWW)
  */
 
 export const AI_ROUTER_CONFIG = {
@@ -9,11 +14,11 @@ export const AI_ROUTER_CONFIG = {
   cloudGatewayUrl: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_GATEWAY_URL) || '',
   apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_GATEWAY_KEY) || 'sk-7c1f91635f52dc7e-fcsworkforce-2026',
   models: {
-    coreAstra: 'fcs-astra',               // 🏆 COMBO CHÍNH: cx/gpt-6-astra + auto-fallback
-    deepReasoning: 'cx/gpt-6-astra',       // Trực tiếp GPT-6 Astra
-    fastCode: 'ag/claude-sonnet-4-6',     // ~2s response, tối ưu React/UI
-    highContext: 'ag/gemini-3.8-flash',   // 1M context, xử lý CV lao động hàng loạt
-    coderExpert: 'kr/qwen3-coder-next',   // Chuyên gia Apps Script & DB SQL
+    coreAstra: 'gemini-3.8-flash',         // 🏆 COMBO CHÍNH: Google Gemini 3.8 Flash SOTA
+    deepReasoning: 'gemini-3.8-flash',     // Trực tiếp Gemini 3.8 Flash
+    fastCode: 'gemini-3.6-flash',          // ~1.5s response, siêu bền bỉ
+    highContext: 'gemini-3.8-flash',       // 1M context, xử lý CV lao động hàng loạt
+    coderExpert: 'gemini-3.8-flash',       // Chuyên gia giải thuật & Apps Script
   }
 } as const;
 
@@ -97,16 +102,52 @@ Em đã tiếp nhận câu hỏi của bạn: *"\\"${userPrompt}\\""*.
 }
 
 /**
- * Executes chat completion through 9Router AI Gateway with automatic local/tunnel fallback.
- * Uses `fcs-astra` (cx/gpt-6-astra) as default. Falls back to deep Domain Knowledge Base if endpoints are offline.
+ * Executes chat completion through 24/7 Gemini Cloud Multi-Key Pool.
+ * Fallback to 9Router AI Gateway if configured, and deep Domain Knowledge Base if offline.
  */
 export async function callAiRouter(
   messages: AiChatMessage[],
   options: AiCompletionOptions = {}
 ): Promise<string> {
-  const model = options.model || (options.modelKey ? AI_ROUTER_CONFIG.models[options.modelKey] : AI_ROUTER_CONFIG.models.coreAstra);
+  // 1. PRIMARY SAAS ENGINE: 24/7 Google Gemini Multi-Key Rotating Pool
+  try {
+    const targetModel = options.model || (options.modelKey ? AI_ROUTER_CONFIG.models[options.modelKey] : 'gemini-3.8-flash');
+    const geminiMessages: GeminiChatMessage[] = messages.map(m => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    const cloudReply = await geminiPool.generateContent(geminiMessages, {
+      model: targetModel,
+      temperature: options.temperature ?? 0.3,
+      maxTokens: options.maxTokens ?? 2048,
+    });
+
+    if (cloudReply && cloudReply.trim()) {
+      return cloudReply;
+    }
+  } catch (geminiErr: any) {
+    console.warn('Gemini Cloud Pool fallback triggered:', geminiErr?.message || geminiErr);
+  }
+
+  // 2. SECONDARY FALLBACK: 9Router AI Gateway (Local/Tunnel)
+  const isBrowser = typeof window !== 'undefined';
+  const isHttps = isBrowser && window.location.protocol === 'https:';
+  const isLocalHost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  const endpoints: string[] = [];
+  if (AI_ROUTER_CONFIG.cloudGatewayUrl) {
+    endpoints.push(`${AI_ROUTER_CONFIG.cloudGatewayUrl}/chat/completions`);
+  }
+  if (!isHttps || isLocalHost) {
+    endpoints.push(`${AI_ROUTER_CONFIG.localBaseUrl}/chat/completions`);
+  }
+  if (AI_ROUTER_CONFIG.tunnelBaseUrl) {
+    endpoints.push(`${AI_ROUTER_CONFIG.tunnelBaseUrl}/chat/completions`);
+  }
+
   const payload = {
-    model,
+    model: 'fcs-astra',
     messages,
     stream: false,
     temperature: options.temperature ?? 0.3,
@@ -118,31 +159,10 @@ export async function callAiRouter(
     'Authorization': `Bearer ${AI_ROUTER_CONFIG.apiKey}`,
   };
 
-  // Build candidate endpoints list safely avoiding Mixed Content
-  const endpoints: string[] = [];
-  const isBrowser = typeof window !== 'undefined';
-  const isHttps = isBrowser && window.location.protocol === 'https:';
-  const isLocalHost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-  if (AI_ROUTER_CONFIG.cloudGatewayUrl) {
-    endpoints.push(`${AI_ROUTER_CONFIG.cloudGatewayUrl}/chat/completions`);
-  }
-
-  // Only try localhost HTTP when NOT on remote HTTPS (prevents Mixed Content warning)
-  if (!isHttps || isLocalHost) {
-    endpoints.push(`${AI_ROUTER_CONFIG.localBaseUrl}/chat/completions`);
-  }
-
-  if (AI_ROUTER_CONFIG.tunnelBaseUrl) {
-    endpoints.push(`${AI_ROUTER_CONFIG.tunnelBaseUrl}/chat/completions`);
-  }
-
-  let lastError: any = null;
-
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout per gateway
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -157,12 +177,12 @@ export async function callAiRouter(
         const reply = data?.choices?.[0]?.message?.content;
         if (reply) return reply;
       }
-    } catch (err: any) {
-      lastError = err;
+    } catch {
+      // Continue to next endpoint
     }
   }
 
-  // Fallback to deep Domain Knowledge Base
+  // 3. TERTIARY FALLBACK: Deep Domain Knowledge Base
   const userMsg = messages.filter(m => m.role === 'user').pop()?.content || '';
   return getSmartFallbackResponse(userMsg);
 }

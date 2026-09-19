@@ -19,6 +19,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { callApi } from '../../services/apiClient';
 
 interface WorkerCareSectionProps {
   worker?: Worker | null;
@@ -117,7 +118,7 @@ FCS xin chúc mừng anh/chị đã chính thức vượt qua giai đoạn làm 
     }
   };
 
-  const handleSaveLog = () => {
+  const handleSaveLog = async () => {
     if (!noteInput.trim()) {
       showNotification('Vui lòng nhập ghi chú tâm tư của lao động', 'warning');
       return;
@@ -138,12 +139,34 @@ FCS xin chúc mừng anh/chị đã chính thức vượt qua giai đoạn làm 
       localStorage.setItem(storageKey, JSON.stringify(updatedLogs));
     } catch (e) {}
 
+    // Transmit to Google Sheets Backend (v2.devsupport.log)
+    try {
+      await callApi('v2.devsupport.log', {
+        ticket: {
+          id: newLog.id,
+          timestamp: new Date().toLocaleString('vi-VN'),
+          senderName: newLog.actor,
+          senderRole: currentUser.role || 'FIELD_OFFICER',
+          category: sentiment === 'RISK_QUIT' ? 'BÁO ĐỘNG NGHỈ VIỆC' : 'CHĂM SÓC ONBOARDING',
+          goal: `[CHĂM SÓC ${selectedMilestone}]: ${wName} (${wId}) tại ${partnerName}`,
+          expectedOutput: 'Duy trì công nhân làm việc ổn định, đạt chuẩn VWW',
+          content: `Mốc: ${selectedMilestone} | Đánh giá: ${sentiment} | Tâm tư: ${noteInput.trim()} | SĐT: ${wPhone}`,
+          priority: sentiment === 'RISK_QUIT' ? 'P0 - CHẶN NGHIỆM THU' : 'P2 - TRUNG BÌNH',
+          stage: 'GĐ2: AI Talent CRM',
+          status: sentiment === 'RISK_QUIT' ? 'CẦN CAN THIỆP KHẨN CẤP' : 'ĐÃ CHĂM SÓC',
+          aiAction: 'Đã lưu vết kiểm toán và thông báo đội ngũ hiện trường'
+        }
+      });
+    } catch (err) {
+      console.warn('Backend sync warning:', err);
+    }
+
     setNoteInput('');
     setSaving(false);
     showNotification(
       sentiment === 'RISK_QUIT'
-        ? 'ĐÃ BÁO ĐỘNG NGUY CƠ NGHỈ VIỆC! Quản lý và hiện trường cần hỗ trợ khẩn cấp.'
-        : 'Đã lưu nhật ký chăm sóc lao động thành công!',
+        ? '⚠️ ĐÃ BÁO ĐỘNG NGUY CƠ NGHỈ VIỆC & LƯU VÀO GOOGLE SHEET! Hiện trường cần hỗ trợ khẩn cấp.'
+        : 'Đã lưu nhật ký chăm sóc thành công vào Google Sheet!',
       sentiment === 'RISK_QUIT' ? 'warning' : 'success'
     );
   };

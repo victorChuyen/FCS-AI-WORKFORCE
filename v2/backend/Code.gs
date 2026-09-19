@@ -188,7 +188,7 @@ function setupDashboardKpiSheet_(ss) {
       ["workers_nu", "=COUNTIFS('01_MASTER_WORKERS'!D2:D50000, \"Nữ\", '01_MASTER_WORKERS'!AE2:AE50000, \"<>*DELETED*\")", "Lao động Nữ hoạt động", "COUNTIFS"],
       ["total_deals", "=COUNTA('02_CRM_DEALS_2026'!A2:A50000)", "Tổng số Deals CRM 2026", "COUNTA(A2:A50000)"],
       ["deals_deleted", "=COUNTIF('02_CRM_DEALS_2026'!S2:S50000, \"*DELETED*\")", "Deals đã đánh dấu xóa mềm", "COUNTIF(S2:S50000, *DELETED*)"],
-      ["total_vww", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L4*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "North Star VWW đã xác minh", "COUNTIFS(H2:H50000, L4*)"],
+      ["total_vww", "=COUNTIFS('02_CRM_DEALS_2026'!O2:O50000, TRUE, '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "North Star VWW đã xác minh", "COUNTIFS(O2:O50000, TRUE)"],
       ["stage_c3", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"C3*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Tiếp nhận C3", "COUNTIFS(C3*)"],
       ["stage_l1", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L1*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Chăm sóc L1", "COUNTIFS(L1*)"],
       ["stage_l2", "=COUNTIFS('02_CRM_DEALS_2026'!H2:H50000, \"L2*\", '02_CRM_DEALS_2026'!S2:S50000, \"<>*DELETED*\")", "Phễu Phỏng vấn L2", "COUNTIFS(L2*)"],

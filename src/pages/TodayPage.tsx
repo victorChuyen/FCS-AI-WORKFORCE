@@ -43,6 +43,75 @@ export const TodayPage: React.FC = () => {
     fetchDashboardData();
   }, [refreshKey]);
 
+  // Dynamic Real-time Lucky Suggestions Engine (Hoạt động 100% trên cả Dữ liệu thật lẫn Mock)
+  const computedLuckySuggestions = useMemo(() => {
+    if (metrics?.luckySuggestions && metrics.luckySuggestions.length > 0) {
+      return metrics.luckySuggestions;
+    }
+
+    const suggestions = [];
+
+    const pendingStarts = metrics?.counts?.passedWaitingForWork ?? 0;
+    if (pendingStarts > 0) {
+      suggestions.push({
+        id: 'sugg-start',
+        text: `Có ${pendingStarts} lao động đã đỗ phỏng vấn đang chờ điều xe / xuất phát đến xưởng.`,
+        priority: Priority.P1,
+        type: 'ACTION_REQUIRED',
+        actionLabel: 'Xem danh sách',
+        targetRoute: '/app/pipeline',
+      });
+    }
+
+    const vwwCount = metrics?.counts?.verifiedWorkingWorkers ?? 0;
+    if (vwwCount > 0) {
+      suggestions.push({
+        id: 'sugg-vww',
+        text: `Đã xác minh ${vwwCount} lao động đạt chuẩn VWW đi làm thực tế. Sẵn sàng đối soát bảng công tính phí.`,
+        priority: Priority.P2,
+        type: 'OPPORTUNITY',
+        actionLabel: 'Đối soát ngay',
+        targetRoute: '/app/confirmations',
+      });
+    }
+
+    const totalDeals = metrics?.counts?.totalDeals ?? 0;
+    const totalWorkers = metrics?.counts?.totalWorkers ?? 0;
+    if (totalWorkers > 0 && totalDeals === 0) {
+      suggestions.push({
+        id: 'sugg-deals',
+        text: `Hệ thống có ${totalWorkers} hồ sơ lao động nhưng chưa tạo Deal phễu CRM 2026. Hãy tạo Deal để bắt đầu tư vấn.`,
+        priority: Priority.P1,
+        type: 'ACTION_REQUIRED',
+        actionLabel: 'Tạo Deal mới',
+        targetRoute: '/app/pipeline',
+      });
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push(
+        {
+          id: 'sugg-golden',
+          text: 'Vận hành quy chuẩn Golden Flow: Lao động -> Phỏng vấn Pass (L2.1) -> Đi làm VWW (L3) -> Đối soát công.',
+          priority: Priority.P3,
+          type: 'INFO',
+          actionLabel: 'Khám phá Pipeline',
+          targetRoute: '/app/pipeline',
+        },
+        {
+          id: 'sugg-clean',
+          text: 'Kiểm tra bảng tổng hợp Lưới Excel Grid để rà soát đồng bộ 34 cột hồ sơ VNeID và 22 cột Deals CRM.',
+          priority: Priority.P3,
+          type: 'INFO',
+          actionLabel: 'Mở Lưới Excel',
+          targetRoute: '/app/grid',
+        }
+      );
+    }
+
+    return suggestions;
+  }, [metrics]);
+
   if (loading && !metrics) {
     return (
       <div className="py-20 text-center">
@@ -142,75 +211,6 @@ export const TodayPage: React.FC = () => {
 
   // The headline: “Hôm nay có X việc cần xử lý” must equal the total number of OPEN Action Queue records actually displayed.
   const openActionsCount = visiblePriorityCards.reduce((sum, card) => sum + card.count, 0);
-
-  // Dynamic Real-time Lucky Suggestions Engine (Hoạt động 100% trên cả Dữ liệu thật lẫn Mock)
-  const computedLuckySuggestions = useMemo(() => {
-    if (metrics?.luckySuggestions && metrics.luckySuggestions.length > 0) {
-      return metrics.luckySuggestions;
-    }
-
-    const suggestions = [];
-
-    const pendingStarts = metrics?.counts?.passedWaitingForWork ?? 0;
-    if (pendingStarts > 0) {
-      suggestions.push({
-        id: 'sugg-start',
-        text: `Có ${pendingStarts} lao động đã đỗ phỏng vấn đang chờ điều xe / xuất phát đến xưởng.`,
-        priority: Priority.P1,
-        type: 'ACTION_REQUIRED',
-        actionLabel: 'Xem danh sách',
-        targetRoute: '/app/pipeline',
-      });
-    }
-
-    const vwwCount = metrics?.counts?.verifiedWorkingWorkers ?? 0;
-    if (vwwCount > 0) {
-      suggestions.push({
-        id: 'sugg-vww',
-        text: `Đã xác minh ${vwwCount} lao động đạt chuẩn VWW đi làm thực tế. Sẵn sàng đối soát bảng công tính phí.`,
-        priority: Priority.P2,
-        type: 'OPPORTUNITY',
-        actionLabel: 'Đối soát ngay',
-        targetRoute: '/app/confirmations',
-      });
-    }
-
-    const totalDeals = metrics?.counts?.totalDeals ?? 0;
-    const totalWorkers = metrics?.counts?.totalWorkers ?? 0;
-    if (totalWorkers > 0 && totalDeals === 0) {
-      suggestions.push({
-        id: 'sugg-deals',
-        text: `Hệ thống có ${totalWorkers} hồ sơ lao động nhưng chưa tạo Deal phễu CRM 2026. Hãy tạo Deal để bắt đầu tư vấn.`,
-        priority: Priority.P1,
-        type: 'ACTION_REQUIRED',
-        actionLabel: 'Tạo Deal mới',
-        targetRoute: '/app/pipeline',
-      });
-    }
-
-    if (suggestions.length === 0) {
-      suggestions.push(
-        {
-          id: 'sugg-golden',
-          text: 'Vận hành quy chuẩn Golden Flow: Lao động -> Phỏng vấn Pass (L2.1) -> Đi làm VWW (L3) -> Đối soát công.',
-          priority: Priority.P3,
-          type: 'INFO',
-          actionLabel: 'Khám phá Pipeline',
-          targetRoute: '/app/pipeline',
-        },
-        {
-          id: 'sugg-clean',
-          text: 'Kiểm tra bảng tổng hợp Lưới Excel Grid để rà soát đồng bộ 34 cột hồ sơ VNeID và 22 cột Deals CRM.',
-          priority: Priority.P3,
-          type: 'INFO',
-          actionLabel: 'Mở Lưới Excel',
-          targetRoute: '/app/grid',
-        }
-      );
-    }
-
-    return suggestions;
-  }, [metrics]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">

@@ -73,7 +73,22 @@ export const WorkerDetailPage: React.FC = () => {
   const [showReactivationModal, setShowReactivationModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'info' | 'journey' | 'deals' | 'interviews' | 'assignments' | 'attendance' | 'audit' | 'actions' | 'care'
-  >('journey');
+  >(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location.search.includes('tab=care')) {
+        return 'care';
+      }
+    } catch {}
+    return 'journey';
+  });
+
+  useEffect(() => {
+    try {
+      if (currentRoute.includes('tab=care') || (typeof window !== 'undefined' && window.location.search.includes('tab=care'))) {
+        setActiveTab('care');
+      }
+    } catch {}
+  }, [currentRoute]);
 
   const [loading, setLoading] = useState(true);
   const [showAddInterview, setShowAddInterview] = useState(false);

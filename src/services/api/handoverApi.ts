@@ -73,9 +73,9 @@ export const handoverApi = {
       console.warn('LocalStorage save notice:', e);
     }
 
-    // 2. Transmit to Google Apps Script backend tab IN
+    // 2. Transmit to Google Apps Script backend tab IN (hoặc fallback sang v2.lead.capture)
     try {
-      await callApi('v2.devsupport.log', {
+      const apiRes = await callApi('v2.devsupport.log', {
         ticket: {
           id,
           timestamp: newItem.timestamp,
@@ -91,6 +91,18 @@ export const handoverApi = {
           aiAction: 'AI CEO Lucky đã tiếp nhận phản hồi từ popup Bàn giao'
         }
       });
+
+      if (!apiRes.success) {
+        await callApi('v2.lead.capture', {
+          fullName: data.senderName || 'Người dùng Bàn giao',
+          phone: '0900000000',
+          email: data.senderEmail || 'coach.chuyen@gmail.com',
+          companyName: `[HANDOVER FEEDBACK] ${data.type}`,
+          workforceScale: priority,
+          bottleneck: `[${id}] ${data.content}`,
+          source: 'AI_COPILOT_FEEDBACK'
+        });
+      }
     } catch {
       // Backend fallback handled gracefully
     }

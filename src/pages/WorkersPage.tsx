@@ -343,7 +343,7 @@ export const WorkersPage: React.FC = () => {
           showNotification('Đã đồng bộ hồ sơ từ Google Sheets thành công!', 'success');
         }}
         onReactivateWorker={worker => setReactivatingWorker(worker)}
-        onCareWorker={worker => navigateTo(`/app/workers/${worker.workerId}`)}
+        onCareWorker={worker => navigateTo(`/app/workers/${worker.workerId}?tab=care`)}
         loading={loading}
       />
 

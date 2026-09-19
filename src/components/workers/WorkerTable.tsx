@@ -179,8 +179,8 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
                     onClick={e => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-center space-x-1.5">
-                      {/* Nút Tái kích hoạt 0đ qua Zalo (cho lao động QUIT hoặc FEE_EXPIRED) */}
-                      {onReactivateWorker && ['QUIT', 'FEE_EXPIRED', 'L3.1', 'L4'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
+                      {/* Nút Tái kích hoạt 0đ qua Zalo (cho cựu lao động, nghỉ việc, hết hạn phí, dừng làm) */}
+                      {onReactivateWorker && ['QUIT', 'FEE_EXPIRED', 'L3.1', 'L4', 'INACTIVE', 'STOPPED', 'NGHỈ', 'DỪNG', 'FAILED', 'NO_SHOW', 'REJECTED', 'HẾT HẠN'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
                         <button
                           type="button"
                           onClick={() => onReactivateWorker(worker)}
@@ -191,8 +191,8 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
                         </button>
                       )}
 
-                      {/* Nút Chăm sóc Onboarding (cho lao động STARTED hoặc WORKING) */}
-                      {onCareWorker && ['STARTED', 'WORKING', 'L3', 'VWW'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
+                      {/* Nút Chăm sóc Onboarding (cho lao động đang làm, vừa vào xưởng, hoặc chờ đi làm) */}
+                      {onCareWorker && ['STARTED', 'WORKING', 'L3', 'VWW', 'WAITING_START', 'ĐI LÀM', 'CHỜ'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
                         <button
                           type="button"
                           onClick={() => onCareWorker(worker)}
@@ -330,7 +330,7 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
 
             {/* Mobile Action buttons row */}
             <div className="flex items-center gap-2 pt-1">
-              {onReactivateWorker && ['QUIT', 'FEE_EXPIRED', 'L3.1', 'L4'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
+              {onReactivateWorker && ['QUIT', 'FEE_EXPIRED', 'L3.1', 'L4', 'INACTIVE', 'STOPPED', 'NGHỈ', 'DỪNG', 'FAILED', 'NO_SHOW', 'REJECTED', 'HẾT HẠN'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
                 <button
                   type="button"
                   onClick={e => {
@@ -344,7 +344,7 @@ export const WorkerTable: React.FC<WorkerTableProps> = ({
                 </button>
               )}
 
-              {onCareWorker && ['STARTED', 'WORKING', 'L3', 'VWW'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
+              {onCareWorker && ['STARTED', 'WORKING', 'L3', 'VWW', 'WAITING_START', 'ĐI LÀM', 'CHỜ'].some(s => (worker.status || '').toUpperCase().includes(s)) && (
                 <button
                   type="button"
                   onClick={e => {

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Worker, Partner } from '../../types';
 import { formatPhone } from '../../utils/formatters';
+import { dealApi } from '../../services/api/dealApi';
+import { callApi } from '../../services/apiClient';
 import {
   X,
   Sparkles,
@@ -74,14 +76,53 @@ Anh/chị có muốn đăng ký giữ vị trí đợt này không ạ? Anh/ch�
     }
   };
 
-  const handleRecordFeedback = (status: 'AGREED' | 'CONSIDERING' | 'DECLINED') => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleRecordFeedback = async (status: 'AGREED' | 'CONSIDERING' | 'DECLINED') => {
     const labelMap = {
       AGREED: 'Lao động đồng ý quay lại làm việc',
       CONSIDERING: 'Lao động đang cân nhắc',
       DECLINED: 'Lao động bận chưa thể đi làm',
     };
-    onSuccess?.(`${labelMap[status]} - Đơn hàng: ${currentPartner}`);
-    onClose();
+    const actionDesc = `${labelMap[status]} - Đơn hàng: ${currentPartner}`;
+    setSubmitting(true);
+
+    try {
+      // 1. Nếu lao động đồng ý (AGREED) -> Tự động sinh Deal mới trên 02_CRM_DEALS_2026
+      if (status === 'AGREED') {
+        await dealApi.createDeal({
+          worker_id: worker.workerId,
+          target_company: currentPartner,
+          branch: worker.province || 'BẮC GIANG',
+          level_sale_status: 'C3',
+          notes: `[RE-ACTIVATION 0Đ]: Cựu lao động đồng ý đi làm lại tại ${currentPartner} (Mức lương: ${selectedSalary})`,
+        });
+      }
+
+      // 2. Ghi nhận log sự kiện vào Google Sheet tab IN / Audit
+      await callApi('v2.devsupport.log', {
+        ticket: {
+          id: `REACT-${Date.now().toString(36).toUpperCase()}`,
+          timestamp: new Date().toLocaleString('vi-VN'),
+          senderName: 'Re-activation Engine 0đ',
+          senderRole: 'RECRUITER',
+          category: 'TÁI KÍCH HOẠT 0Đ',
+          goal: `Tái kích hoạt lao động ${worker.fullName} (${worker.workerId})`,
+          expectedOutput: status === 'AGREED' ? 'Tạo Deal C3 thành công' : 'Ghi nhận phản hồi chăm sóc',
+          content: `${actionDesc} | Mức lương: ${selectedSalary} | SĐT: ${worker.phone}`,
+          priority: status === 'AGREED' ? 'P0 - TIẾP NHẬN DEAL MỚI' : 'P2 - THEO DÕI',
+          stage: 'GĐ2: AI Talent CRM',
+          status: status === 'AGREED' ? 'ĐÃ TẠO DEAL C3' : 'ĐÃ LIÊN HỆ',
+          aiAction: 'Đã cập nhật hệ thống tuyển dụng 0đ Marketing Zalo',
+        }
+      });
+    } catch (err) {
+      console.warn('Reactivation backend sync warning:', err);
+    } finally {
+      setSubmitting(false);
+      onSuccess?.(actionDesc);
+      onClose();
+    }
   };
 
   return (

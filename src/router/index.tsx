@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { createBrowserRouter, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useNavigate, useLocation, useRouteError } from 'react-router-dom';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { AppLayout } from './AppLayout';
 import { PublicLayout } from './PublicLayout';
@@ -56,6 +56,10 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 
 // Error Boundary thân thiện thay thế cho màn hình đen mặc định của React Router
 export const RouteErrorBoundary: React.FC = () => {
+  const error: any = useRouteError();
+  const errorMsg = error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+  console.error('[RouteErrorBoundary caught]:', error);
+
   return (
     <div className="flex items-center justify-center min-h-[70vh] p-6 text-center">
       <div className="max-w-md p-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-4 text-slate-200">
@@ -66,6 +70,11 @@ export const RouteErrorBoundary: React.FC = () => {
         <p className="text-xs text-slate-400 leading-relaxed">
           Giao diện và tính năng hệ thống vừa được nâng cấp trên đám mây. Vui lòng bấm nút bên dưới để tải lại phiên bản mới nhất.
         </p>
+        {errorMsg && (
+          <div className="p-2 bg-rose-950/60 border border-rose-800/60 rounded-lg text-[11px] text-rose-300 font-mono text-left max-h-32 overflow-y-auto">
+            {errorMsg}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => {
