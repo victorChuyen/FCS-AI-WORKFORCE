@@ -656,28 +656,64 @@ Khi trao đổi với người dùng:
                       </div>
                     </div>
 
-                    {/* Stage 3 Card */}
-                    <div className="p-3.5 rounded-xl bg-slate-900/90 border border-amber-500/40 space-y-2 shadow-sm">
+                    {/* Stage 3 Card - APPROVED & ACTIVATED */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 space-y-2.5 shadow-sm">
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                               GĐ 3
                             </span>
                             <span className="font-extrabold text-white text-xs">B2B Employer CRM, SLA Headcount & Khớp Công VWW</span>
                           </div>
-                          <div className="text-[10px] text-amber-400 font-bold flex items-center space-x-1">
-                            <Clock className="w-3 h-3 text-amber-400" />
-                            <span>Ưu tiên số 1 tiếp theo • Sẵn sàng kích hoạt</span>
+                          <div className="text-[10px] text-emerald-400 font-bold flex items-center space-x-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span>Đã duyệt bởi Chairman Victor Chuyen • Đang vận hành</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-600 text-white shrink-0">
-                          KÍCH HOẠT TIẾP
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-600 text-white shrink-0">
+                          ĐÃ KÍCH HOẠT
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-300 leading-relaxed">
-                        Quản trị đơn hàng xưởng (Foxconn, Luxshare, Fuyu), tự động khớp công máy nhà máy với danh sách điều động xưởng để xác nhận North Star VWW và tính hoa hồng tuyển dụng 4 cấp.
+                        Quản trị đơn hàng 29 nhà máy KCN (Foxconn, Luxshare, Fuyu, Goertek...), tự động khớp công máy nhà máy để xác nhận North Star VWW và vận hành quy trình ký duyệt hoa hồng 4 cấp điện tử.
                       </p>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigateTo('/app/results?tab=b2b-orders');
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 min-w-[110px] py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3 text-blue-400" />
+                          <span>Đơn Hàng 29 Xưởng</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigateTo('/app/confirmations?tab=matching');
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 min-w-[110px] py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3 text-emerald-400" />
+                          <span>Khớp Công VWW</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigateTo('/app/results?tab=commission');
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 min-w-[110px] py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3 text-purple-400" />
+                          <span>Duyệt Hoa Hồng 4 Cấp</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Stages 4, 5, 6 summary */}

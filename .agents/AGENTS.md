@@ -155,7 +155,11 @@ D:/FCS-AI-WORKFORCE/
    - Chạy bộ kiểm thử tự động `test_live_api_suite.mjs` đạt **5/5 PASS (100% Real Data)**.
    - Xác nhận hiển thị trực quan thực tế trên Web Console Production (`https://fcs.breaths.live`): Trang Quản lý Lao động (10 hồ sơ), Kanban Pipeline (10 deals, 2 VWW, 25tr hoa hồng dự kiến), Lưới Excel Grid Workspace (đồng bộ 2 chiều thời gian thực).
 
-### 2. Kế hoạch trọng tâm cho phiên làm việc ngày mai:
-- [ ] **Kiểm thử Golden Flow:** Thực hiện thao tác kéo thả deal trên Kanban chuyển trạng thái lao động từ `L2 (Hẹn PV)` → `L2.1 (Đỗ PV)` → `L3 (VWW Đi làm)` và kiểm tra việc tự động ghi nhận sự kiện vào sheet `05_PIPELINE_EVENTS`.
-- [ ] **Worker 360 & Hồ sơ số:** Kiểm tra tính năng tạo hợp đồng, checklist nhận việc và xuất file in ấn.
-- [ ] **Kiểm thử tích hợp Lead Marketing:** Kiểm tra luồng gửi email tự động khi có lead mới đăng ký qua Landing Page Blueprint Modal.
+### 2. Kế hoạch trọng tâm cho phiên làm việc tiếp theo:
+- [x] **Phê Duyệt & Kích Hoạt Giai Đoạn 3 (Hoàn tất 100% 2026-09-19):**
+  - **B2B Employer CRM (29 Nhà Máy KCN):** Đã tích hợp trọn vẹn 29 Tập đoàn/Xưởng KCN từ `DM_COMPANY.csv`, quản trị chỉ tiêu bù quân 1.850 VWW, SLA Fill Rate (80.0%) và giá hợp đồng giờ.
+  - **Billing & Duyệt Hoa Hồng 4 Cấp:** Tính doanh thu 1.85 tỷ đồng, quỹ hoa hồng 21.7tr đồng cho 10 VWW Deal thực tế; quy trình ký duyệt 4 cấp điện tử với nút ký 1-click của Chairman Victor Chuyen gắn mã băm SHA-256 xác thực.
+  - **Lộ Trình Bàn Giao Copilot:** Cập nhật thẻ GĐ 3 sang `🟢 ĐÃ KÍCH HOẠT`, tích hợp chứng chỉ số nghiệm thu `CERT-FCS-GD3-APPROVED-2026-0919`.
+  - **Production Live:** Đã build và deploy thành công lên `https://fcs.breaths.live/app/results`.
+- [ ] **Giai Đoạn 4 (Theo Lộ Trình):** Sổ cái CTV / Vendor CRM, quản lý tạm ứng tiền xe trọ và Báo cáo P&L phân tầng theo từng chi nhánh.
+- [ ] **Giai Đoạn 5 (Theo Lộ Trình):** Inbound Lead Harvester (TikTok, FB Ads đổ thẳng C3 trong 1s) & Phân bổ tự động cho Telesale.

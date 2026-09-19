@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { OperationalResults } from '../types';
@@ -9,19 +10,41 @@ import {
   Users,
   ShieldCheck,
   Building,
+  Building2,
   Download,
   Calendar,
   FileSpreadsheet,
   CheckCircle2,
   RefreshCw,
   Briefcase,
+  DollarSign,
+  Sparkles,
 } from 'lucide-react';
+import { B2BEmployerOrdersTab } from '../components/results/B2BEmployerOrdersTab';
+import { CommissionSettlementTab } from '../components/results/CommissionSettlementTab';
 
 export const ResultsPage: React.FC = () => {
   const { refreshKey, showNotification, currentUser } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [results, setResults] = useState<OperationalResults | null>(null);
   const [timeframe, setTimeframe] = useState<'month' | 'quarter' | 'all'>('month');
   const [loading, setLoading] = useState(true);
+
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'vww' | 'b2b-orders' | 'commission'>(
+    tabParam === 'b2b-orders' || tabParam === 'commission' ? tabParam : 'vww'
+  );
+
+  useEffect(() => {
+    if (tabParam === 'b2b-orders' || tabParam === 'commission' || tabParam === 'vww') {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (t: 'vww' | 'b2b-orders' | 'commission') => {
+    setActiveTab(t);
+    setSearchParams({ tab: t });
+  };
 
   const fetchResults = async () => {
     setLoading(true);
@@ -80,18 +103,21 @@ export const ResultsPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-600 mb-1.5">
             <span className="inline-flex items-center space-x-1 font-extrabold text-emerald-700 uppercase tracking-wider">
               <Award className="w-3.5 h-3.5" />
-              <span>Thước đo VWW</span>
+              <span>Giai Đoạn 3: Quản Trị Khách Hàng & Doanh Thu</span>
             </span>
             <span className="text-slate-300">•</span>
             <span className="inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
               {currentUser.tenantId || 'FCS-000001'}
             </span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full font-extrabold text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300">
+              ✓ GĐ3 ĐÃ PHÊ DUYỆT
+            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Kết quả & Thước đo VWW
+            Kết Quả VWW, B2B 29 Xưởng & Hoa Hồng
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Báo cáo đo lường giá trị thực tế doanh nghiệp: Verified Working Worker (VWW) và tỷ lệ giữ chân lao động độc lập của {currentUser.companyName || 'FCS-000001'}.
+            Hệ thống quản trị chỉ tiêu Headcount 29 nhà máy KCN, đối soát máy mở khóa North Star VWW và quy trình ký duyệt hoa hồng 4 cấp điện tử.
           </p>
         </div>
 
@@ -134,8 +160,65 @@ export const ResultsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* TOP 4 OPERATIONAL KPI CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 3 Main Navigation Tabs for Results & Stage 3 */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+        <button
+          type="button"
+          onClick={() => handleTabChange('vww')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            activeTab === 'vww'
+              ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-700/20'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>1. THƯỚC ĐO VWW & HIỆU SUẤT</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('b2b-orders')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            activeTab === 'b2b-orders'
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md shadow-blue-700/20'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>2. B2B 29 NHÀ MÁY & SLA HEADCOUNT (GĐ 3)</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-400 text-slate-950 font-black">
+            29 XƯỞNG
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('commission')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            activeTab === 'commission'
+              ? 'bg-gradient-to-r from-purple-600 to-indigo-800 text-white shadow-md shadow-purple-700/20'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+          }`}
+        >
+          <DollarSign className="w-4 h-4" />
+          <span>3. BILLING & DUYỆT HOA HỒNG 4 CẤP (GĐ 3)</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-400 text-slate-950 font-black">
+            4 CẤP KÝ SỐ
+          </span>
+        </button>
+      </div>
+
+      {/* TAB 2: B2B EMPLOYER 29 FACTORIES */}
+      {activeTab === 'b2b-orders' && <B2BEmployerOrdersTab />}
+
+      {/* TAB 3: COMMISSION SETTLEMENT 4-TIER */}
+      {activeTab === 'commission' && <CommissionSettlementTab />}
+
+      {/* TAB 1: VWW NORTH STAR & OPERATIONAL RESULTS */}
+      {activeTab === 'vww' && (
+        <div className="space-y-6">
+          {/* TOP 4 OPERATIONAL KPI CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Metric 1: VWW Achieved */}
         <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-300 rounded-xl shadow-2xs">
           <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-emerald-800 mb-1">
@@ -321,6 +404,10 @@ export const ResultsPage: React.FC = () => {
           </table>
         </div>
       </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default ResultsPage;
