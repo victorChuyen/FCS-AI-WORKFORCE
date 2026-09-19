@@ -24,6 +24,7 @@ import {
   Sparkles,
   Bot,
   Trash2,
+  Megaphone,
 } from 'lucide-react';
 import { AccountModal } from '../common/AccountModal';
 import { SuperAdminResetModal } from '../common/SuperAdminResetModal';
@@ -81,6 +82,7 @@ export const Navbar: React.FC = () => {
     { label: 'LAO ĐỘNG', route: '/app/workers', icon: Users, shortLabel: 'Lao động' },
     { label: 'LƯỚI EXCEL', route: '/app/grid', icon: FileSpreadsheet, shortLabel: 'Lưới Excel' },
     { label: 'PIPELINE', route: '/app/pipeline', icon: GitFork, shortLabel: 'Pipeline' },
+    { label: 'MARKETING AI', route: '/app/marketing', icon: Megaphone, shortLabel: 'Marketing' },
     { label: 'CẦN XÁC NHẬN', route: '/app/confirmations', icon: CheckCircle2, shortLabel: 'Xác nhận' },
     { label: 'KẾT QUẢ', route: '/app/results', icon: BarChart3, shortLabel: 'Kết quả' },
   ];
@@ -522,7 +524,7 @@ export const Navbar: React.FC = () => {
         className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-1 py-1"
         style={{ paddingBottom: 'max(4px, env(safe-area-inset-bottom))' }}
       >
-        <div className="grid grid-cols-6 gap-0.5 max-w-lg mx-auto">
+        <div className="grid grid-cols-7 gap-0.5 max-w-lg mx-auto">
           {navItems.map(item => {
             const Icon = item.icon;
             const active = isActive(item.route);

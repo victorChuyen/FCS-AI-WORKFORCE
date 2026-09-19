@@ -766,25 +766,85 @@ Khi trao đổi với người dùng:
                       </div>
                     </div>
 
-                    {/* Stages 5, 6 summary */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
-                      <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-                        <div className="font-bold text-slate-400 flex items-center space-x-1">
-                          <span className="px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">GĐ 5</span>
-                          <span>AI Marketing Ads</span>
+                    {/* Stage 5 Card - ACTIVATED & LIVE */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/90 border border-purple-500/40 space-y-2.5 shadow-sm">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                              GĐ 5
+                            </span>
+                            <span className="font-extrabold text-white text-xs">AI Marketing CRM & Inbound Lead Harvester</span>
+                          </div>
+                          <div className="text-[10px] text-purple-400 font-bold flex items-center space-x-1">
+                            <CheckCircle2 className="w-3 h-3 text-purple-400" />
+                            <span>Đã kích hoạt bởi AI CEO Lucky • Vận hành tự động</span>
+                          </div>
                         </div>
-                        <p className="text-slate-500">Thu lead TikTok/FB về C3, chia data 1s cho Telesale.</p>
-                        <div className="text-[9px] text-slate-500 font-semibold">⚪ Ưu tiên số 1 tiếp theo</div>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-purple-600 text-white shrink-0">
+                          ĐÃ KÍCH HOẠT
+                        </span>
                       </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Tự động thu lead TikTok Ads & FB Ads về phễu C3 trong 1 giây, chia data thông minh có trọng số cho Telesale, và sinh kịch bản video viral TikTok/Facebook qua Gemini AI Pool 13-Key.
+                      </p>
 
-                      <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-                        <div className="font-bold text-slate-400 flex items-center space-x-1">
-                          <span className="px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">GĐ 6</span>
-                          <span>Multi-Tenant SaaS</span>
-                        </div>
-                        <p className="text-slate-500">Đóng gói SaaS nhân bản, sàn san sẻ KCN toàn quốc.</p>
-                        <div className="text-[9px] text-slate-500 font-semibold">⚪ Theo lộ trình</div>
+                      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigateTo('/app/marketing?tab=harvester');
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 min-w-[120px] py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3 text-purple-400" />
+                          <span>Thu Lead 1s & C3</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigateTo('/app/marketing?tab=routing');
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 min-w-[120px] py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3 text-blue-400" />
+                          <span>Chia Tuyến Telesale</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigateTo('/app/marketing?tab=generator');
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 min-w-[120px] py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3 text-emerald-400" />
+                          <span>Xưởng Video AI</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigateTo('/app/marketing?tab=approvals');
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 min-w-[120px] py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                        >
+                          <ExternalLink className="w-3 h-3 text-amber-400" />
+                          <span>Chốt Chặn Ngân Sách</span>
+                        </button>
                       </div>
+                    </div>
+
+                    {/* Stage 6 summary */}
+                    <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1 text-[10px]">
+                      <div className="font-bold text-slate-400 flex items-center space-x-1">
+                        <span className="px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">GĐ 6</span>
+                        <span>Multi-Tenant SaaS & National Network</span>
+                      </div>
+                      <p className="text-slate-500">Đóng gói SaaS nhân bản cho các chi nhánh và san sẻ nguồn lực lao động liên tỉnh.</p>
+                      <div className="text-[9px] text-slate-500 font-semibold">⚪ Ưu tiên tiếp theo</div>
                     </div>
 
                     {/* Quick CTA to Sign-off */}

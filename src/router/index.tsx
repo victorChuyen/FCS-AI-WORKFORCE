@@ -106,6 +106,7 @@ const ReviewPage = lazyWithRetry(() => import('../pages/ReviewPage'), 'ReviewPag
 const ResultsPage = lazyWithRetry(() => import('../pages/ResultsPage'), 'ResultsPage');
 const PlatformTenantsPage = lazyWithRetry(() => import('../pages/PlatformTenantsPage'), 'PlatformTenantsPage');
 const ExcelGridPage = lazyWithRetry(() => import('../pages/ExcelGridPage'), 'ExcelGridPage');
+const MarketingHarvesterPage = lazyWithRetry(() => import('../pages/MarketingHarvesterPage'), 'MarketingHarvesterPage');
 
 const PageLoader: React.FC = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -275,6 +276,18 @@ export const router = createBrowserRouter([
       {
         path: '/results',
         element: <RedirectPreservingSearch to="/app/results" />,
+      },
+      {
+        path: '/app/marketing',
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <MarketingHarvesterPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/marketing',
+        element: <RedirectPreservingSearch to="/app/marketing" />,
       },
       {
         path: '/platform/tenants',
