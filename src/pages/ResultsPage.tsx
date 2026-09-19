@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { B2BEmployerOrdersTab } from '../components/results/B2BEmployerOrdersTab';
 import { CommissionSettlementTab } from '../components/results/CommissionSettlementTab';
+import { BranchPnLAndVendorTab } from '../components/results/BranchPnLAndVendorTab';
 
 export const ResultsPage: React.FC = () => {
   const { refreshKey, showNotification, currentUser } = useApp();
@@ -31,17 +32,17 @@ export const ResultsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<'vww' | 'b2b-orders' | 'commission'>(
-    tabParam === 'b2b-orders' || tabParam === 'commission' ? tabParam : 'vww'
+  const [activeTab, setActiveTab] = useState<'vww' | 'b2b-orders' | 'commission' | 'pnl-vendor'>(
+    tabParam === 'b2b-orders' || tabParam === 'commission' || tabParam === 'pnl-vendor' ? tabParam : 'vww'
   );
 
   useEffect(() => {
-    if (tabParam === 'b2b-orders' || tabParam === 'commission' || tabParam === 'vww') {
+    if (tabParam === 'b2b-orders' || tabParam === 'commission' || tabParam === 'pnl-vendor' || tabParam === 'vww') {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
 
-  const handleTabChange = (t: 'vww' | 'b2b-orders' | 'commission') => {
+  const handleTabChange = (t: 'vww' | 'b2b-orders' | 'commission' | 'pnl-vendor') => {
     setActiveTab(t);
     setSearchParams({ tab: t });
   };
@@ -206,6 +207,22 @@ export const ResultsPage: React.FC = () => {
             4 CẤP KÝ SỐ
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange('pnl-vendor')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            activeTab === 'pnl-vendor'
+              ? 'bg-gradient-to-r from-cyan-600 to-blue-800 text-white shadow-md shadow-cyan-700/20'
+              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          <span>4. TÀI CHÍNH, SỔ CÁI CTV & P&L CHI NHÁNH (GĐ 4)</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-400 text-slate-950 font-black">
+            6 CHI NHÁNH
+          </span>
+        </button>
       </div>
 
       {/* TAB 2: B2B EMPLOYER 29 FACTORIES */}
@@ -213,6 +230,9 @@ export const ResultsPage: React.FC = () => {
 
       {/* TAB 3: COMMISSION SETTLEMENT 4-TIER */}
       {activeTab === 'commission' && <CommissionSettlementTab />}
+
+      {/* TAB 4: P&L BY BRANCH & VENDOR ADVANCE LEDGER */}
+      {activeTab === 'pnl-vendor' && <BranchPnLAndVendorTab />}
 
       {/* TAB 1: VWW NORTH STAR & OPERATIONAL RESULTS */}
       {activeTab === 'vww' && (
